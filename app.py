@@ -3,7 +3,9 @@ from datetime import datetime, timedelta
 import io
 from io import BytesIO
 import os
-import random
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import urllib.parse
 import pandas as pd
 import qrcode
@@ -24,6 +26,13 @@ GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", "")
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "deni2026")
 VÝCHOZÍ_B2B_PIN = st.secrets.get("B2B_PIN", "partner2026")
+
+# --- NASTAVENÍ E-MAILU ZE SECRETS ---
+EMAIL_SENDER = st.secrets.get("EMAIL_SENDER", "")
+EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD", "")
+EMAIL_RECEIVER = st.secrets.get("EMAIL_RECEIVER", "")
+SMTP_SERVER = st.secrets.get("SMTP_SERVER", "smtp.gmail.com")
+SMTP_PORT = st.secrets.get("SMTP_PORT", 465)
 
 PRODUKTY_KATALOG = [
     {"nazev": "🎃 Dýňulka", "cena_mo": 269.0},
@@ -199,6 +208,48 @@ st.markdown("""
 
 def get_headers():
     return {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
+
+def odeslat_email_upozorneni(id_obj, firma, cena, celkem_ks, polozky_text):
+    if not EMAIL_SENDER or not EMAIL_PASSWORD or not EMAIL_RECEIVER:
+        return False
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_SENDER
+        msg['To'] = EMAIL_RECEIVER
+        msg['Subject'] = f"🕯️ Nová B2B objednávka #{id_obj} od {firma}"
+        
+        body = f"""Dobrý den,
+        
+přes B2B portál Deni Candle byla právě přijata nová objednávka!
+
+🛍️ Objednávka #{id_obj}
+🏢 Partner: {firma}
+💰 Celková cena (VO): {cena:,.0f} Kč
+📦 Celkem kusů: {celkem_ks} ks
+
+Přehled položek:
+{polozky_text}
+
+Objednávku si můžete detailně prohlédnout v administraci aplikace.
+
+Hezký den,
+Váš B2B systém Deni Candle
+"""
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+        
+        if SMTP_PORT == 465:
+            server = smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT)
+        else:
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
+            server.starttls()
+            
+        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Chyba pri odesilani e-mailu: {e}")
+        return False
 
 def nacti_nastaveni():
     vychozi_data = {
@@ -444,7 +495,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 else:
                     with st.spinner('Odesílám VO objednávku... 🕯️'):
                         nove_id = 1 if df_orders.empty else int(df_orders["ID"].max()) + 1
-                        polozky_text = ", ".join(vybrane_polozky)
+                        polozky_text = ",\n".join(vybrane_polozky) # formátování s odřádkováním pro email a zobrazení
                         
                         nova_obj = pd.DataFrame([{
                             "ID": nove_id,
@@ -456,7 +507,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             "Email": email,
                             "Adresa_Doruceni": adresa,
                             "Poznamka": poznamka,
-                            "Polozky_Detail": polozky_text,
+                            "Polozky_Detail": ", ".join(vybrane_polozky), # v DB udržíme jednoládkově
                             "Celkem_Ks": celkem_ks,
                             "Sleva_Pouzita": f"{aktualni_sleva} %",
                             "Cena_Celkem_VO": celkova_cena_vo,
@@ -466,10 +517,13 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                         
                         df_aktualni = pd.concat([df_orders, nova_obj], ignore_index=True)
                         if uloz_objednavky(df_aktualni, current_sha):
+                            # Odeslání e-mailu na pozadí
+                            odeslat_email_upozorneni(nove_id, firma, celkova_cena_vo, celkem_ks, polozky_text)
+                            
                             st.balloons()
                             st.success("🎉 Děkujeme! Velkoobchodní objednávka byla úspěšně přijata.")
                             
-                            html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text, celkem_ks, celkova_cena_vo, aktualni_sleva)
+                            html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text.replace("\n", "<br>"), celkem_ks, celkova_cena_vo, aktualni_sleva)
                             st.download_button("📥 Stáhnout B2B Potvrzení (HTML/PDF)", html_uct, file_name=f"DeniCandle_B2B_{nove_id}.html", mime="text/html")
                             
                             spd_str = f"SPD*1.0*ACC:{BANK_ACCOUNT}/{BANK_CODE}*AM:{celkova_cena_vo:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
