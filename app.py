@@ -498,7 +498,6 @@ else:
             if not df_orders.empty:
                 st.markdown("### 📋 Přehled přijatých objednávek")
                 
-                # Tlačítko pro stažení celé DB do Excelu nahoře
                 excel_db = vytvor_profi_excel(df_orders, titulek="Databaze_Objednavek")
                 st.download_button(
                     label="📥 Stáhnout kompletní databázi do Excelu", 
@@ -510,7 +509,6 @@ else:
                 
                 st.divider()
                 
-                # Výpis objednávek přes rozbalovací karty (od nejnovější po nejstarší)
                 df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
                 
                 for idx, row in df_orders_sorted.iterrows():
@@ -547,34 +545,54 @@ else:
                 
         with tab_vyroba:
             if not df_orders.empty:
-                st.markdown("### 🌍 Celkový souhrn (Vše k odlítí)")
-                vsechny_polozky = []
-                for detail in df_orders["Polozky_Detail"].dropna():
-                    for item in detail.split(", "):
-                        if "x " in item:
-                            ks, název = item.split("x ", 1)
-                            vsechny_polozky.append({"Produkt": název, "Ks": int(ks)})
+                st.markdown("### 📊 Výrobní matice (Přehled podle objednávek)")
                 
-                if vsechny_polozky:
-                    df_sum = pd.DataFrame(vsechny_polozky).groupby("Produkt").sum().reset_index()
-                    st.table(df_sum)
+                # Sestavení matice (Řádky = Produkty, Sloupce = Objednávky)
+                matrix_rows = []
+                for idx, row in df_orders.iterrows():
+                    id_obj = row['ID']
+                    partner = row['Oznaceni_Partnera']
+                    col_label = f"Obj #{id_obj} ({partner})"
                     
-                    excel_data = vytvor_profi_excel(df_sum, titulek="Celkovy_Souhrn")
+                    detail = row["Polozky_Detail"]
+                    if pd.notna(detail):
+                        for item in str(detail).split(", "):
+                            if "x " in item:
+                                ks, název = item.split("x ", 1)
+                                matrix_rows.append({"Produkt": název, "Col": col_label, "Ks": int(ks)})
+                
+                if matrix_rows:
+                    df_matrix_raw = pd.DataFrame(matrix_rows)
+                    df_pivot = df_matrix_raw.pivot_table(index="Produkt", columns="Col", values="Ks", aggfunc="sum", fill_value=0)
+                    
+                    # Přidání celkového součtu
+                    df_pivot["CELKEM KS"] = df_pivot.sum(axis=1)
+                    df_pivot = df_pivot.sort_values(by="CELKEM KS", ascending=False).reset_index()
+                    
+                    # Nahrazení nuly pomlčkou pro čistší vzhled
+                    df_pivot_display = df_pivot.copy()
+                    for col in df_pivot_display.columns:
+                        if col not in ["Produkt", "CELKEM KS"]:
+                            df_pivot_display[col] = df_pivot_display[col].apply(lambda x: f"{x} ks" if x > 0 else "-")
+                        elif col == "CELKEM KS":
+                            df_pivot_display[col] = df_pivot_display[col].apply(lambda x: f"🔥 {x} ks")
+
+                    st.table(df_pivot_display)
+                    
+                    excel_data = vytvor_profi_excel(df_pivot, titulek="Vyrobni_Matice")
                     st.download_button(
-                        label="📥 Stáhnout celkový souhrn do Excelu", 
+                        label="📥 Stáhnout celou výrobní matici do Excelu", 
                         data=excel_data, 
-                        file_name=f"DeniCandle_CelkovaVyroba_{datetime.now().strftime('%d_%m')}.xlsx", 
+                        file_name=f"DeniCandle_VyrobniMatice_{datetime.now().strftime('%d_%m')}.xlsx", 
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key="dl_all_vyroba"
+                        key="dl_all_vyroba_matrix"
                     )
                 else:
                     st.info("Žádné svíčky k výrobě.")
                 
                 st.divider()
                 
-                st.markdown("### 📦 Výroba podle konkrétních objednávek")
-                st.write("Kliknutím na objednávku zobrazíte přesný rozpis a možnost stažení vlastního Excelu pro daného partnera.")
-                
+                st.markdown("### 📦 Samostatné rozpisky pro jednotlivé zakázky")
                 df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
                 
                 for idx, row in df_orders_sorted.iterrows():
@@ -582,7 +600,7 @@ else:
                     partner = row['Oznaceni_Partnera']
                     datum = row['Datum_Vytvoreni']
                     
-                    with st.expander(f"Objednávka #{id_obj} — {partner} ({datum})"):
+                    with st.expander(f"Rozpiska pro Objednávku #{id_obj} — {partner} ({datum})"):
                         polozky_obj = []
                         detail = row["Polozky_Detail"]
                         if pd.notna(detail):
