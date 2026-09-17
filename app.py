@@ -57,7 +57,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Opravené CSS styly s vynuceným tmavým textem pro Dark Mode
+# Zjednodušené CSS pouze na to nejnutnější - nezbarvujeme texty natvrdo
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -65,57 +65,26 @@ st.markdown("""
     header {background-color: transparent !important;}
     footer {visibility: hidden;}
     
-    h1, h2, h3, .main-header {
-        color: #8C5A47 !important;
-        font-family: 'Georgia', serif;
-    }
-
-    /* Karta pozadí */
-    div[data-testid="stColumn"] {
-        background: #FAF7F5 !important;
-        padding: 20px;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border-top: 5px solid #C48B71;
-    }
-    
-    /* Vynucení tmavé barvy pro všechny texty a popisky uvnitř i v dark modu */
-    div[data-testid="stColumn"] *, 
-    label, 
-    [data-testid="stWidgetLabel"] *, 
-    .stMarkdown p, 
-    span,
-    p {
-        color: #2C2C2C !important;
-    }
-
-    /* Vzhled vstupních políček */
-    input, textarea, select {
-        color: #2C2C2C !important;
-        background-color: #FFFFFF !important;
-    }
-    
+    /* Vlastní barva hlavních tlačítek */
     div.stButton > button:first-child {
-        background-color: #8C5A47 !important;
-        color: white !important;
+        background-color: #8C5A47;
+        color: white;
         border: none;
         border-radius: 8px;
         font-weight: bold;
     }
     div.stButton > button:first-child:hover {
-        background-color: #6E4434 !important;
-        color: white !important;
+        background-color: #6E4434;
+        color: white;
     }
     
+    /* Zvýrazňovací box bez přepisování barvy textu (adaptivní na dark/light mode) */
     .summary-card {
-        background-color: #F4EBE6 !important;
         padding: 15px;
         border-radius: 8px;
         border-left: 5px solid #8C5A47;
         margin-bottom: 20px;
-    }
-    .summary-card * {
-        color: #2C2C2C !important;
+        background-color: rgba(140, 90, 71, 0.1);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -209,7 +178,7 @@ rezim = st.sidebar.radio("Navigace:", ["🛍️ Velkoobchodní objednávka", "�
 # 1. B2B OBJEDNÁVKOVÝ PORTÁL PRO PARTNERY
 # ---------------------------------------------------------
 if rezim == "🛍️ Velkoobchodní objednávka":
-    st.markdown("<h1 class='main-header'>🕯️ Velkoobchodní portál Deni Candle</h1>", unsafe_allow_html=True)
+    st.markdown("<h1>🕯️ Velkoobchodní portál Deni Candle</h1>", unsafe_allow_html=True)
     
     url_pin = st.query_params.get("pin", "")
     zadan_pin = st.text_input("Zadejte přístupový B2B PIN partnera:", type="password", value=url_pin) if url_pin != B2B_PIN else B2B_PIN
@@ -261,10 +230,10 @@ if rezim == "🛍️ Velkoobchodní objednávka":
             
             st.markdown(f"""
                 <div class='summary-card'>
-                    <h4 style='color: #8C5A47; margin: 0;'>Shrnutí VO objednávky</h4>
+                    <h4 style='margin: 0;'>Shrnutí VO objednávky</h4>
                     <p style='margin: 5px 0 0 0; font-size: 14px;'>Celkem produktů: <strong>{celkem_ks} ks</strong></p>
-                    <p style='margin: 0; font-size: 13px; color: #28a745;'>Vaše úspora oproti MO: {uspora:,.0f} Kč</p>
-                    <h3 style='margin: 10px 0 0 0; color: #8C5A47;'>Celkem VO cena: {celkova_cena_vo:,.0f} Kč</h3>
+                    <p style='margin: 0; font-size: 13px;'>Vaše úspora oproti MO: {uspora:,.0f} Kč</p>
+                    <h3 style='margin: 10px 0 0 0;'>Celkem VO cena: {celkova_cena_vo:,.0f} Kč</h3>
                 </div>
             """, unsafe_allow_html=True)
             
