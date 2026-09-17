@@ -23,9 +23,8 @@ BANK_CODE = "0800"       # Doplňte kód banky
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", "")
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "deni2026")
-B2B_PIN = st.secrets.get("B2B_PIN", "partner2026")
+VÝCHOZÍ_B2B_PIN = st.secrets.get("B2B_PIN", "partner2026")
 
-VO_SLEVA_PERCENT = 40 
 MIN_OBJEDNAVKA_KC = 3000
 
 PRODUKTY_KATALOG = [
@@ -65,23 +64,16 @@ st.markdown("""
     header {background-color: transparent !important;}
     footer {visibility: hidden;}
     
-    /* Vynucení béžového pozadí pro celou aplikaci i postranní panel */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
         background-color: #FAF4EE !important;
     }
-
-    /* Černé písmo pro všechny texty a popisky */
     html, body, [data-testid="stAppViewContainer"] *, [data-testid="stSidebar"] * {
         color: #1A1A1A !important;
     }
-
-    /* Nadpisy v elegantní tmavě hnědé / černé */
     h1, h2, h3, h4 {
         color: #5C3A2E !important;
         font-family: 'Georgia', serif;
     }
-
-    /* Karta sekcí - světlější béžová s ohraničením */
     div[data-testid="stColumn"] {
         background: #F4EBE2 !important;
         padding: 20px;
@@ -89,22 +81,16 @@ st.markdown("""
         border: 1px solid #E2D3C4 !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
-
-    /* Vstupní políčka - bílá s černým písmem */
     input, textarea, div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
         color: #1A1A1A !important;
         border: 1px solid #C8B8A8 !important;
         border-radius: 6px !important;
     }
-    
-    /* Tlačítka pro změnu počtu (+ / -) */
     button[title="Increase value"], button[title="Decrease value"] {
         background-color: #E2D3C4 !important;
         color: #1A1A1A !important;
     }
-
-    /* Hlavní odesílací tlačítko */
     div.stButton > button:first-child {
         background-color: #8C5A47 !important;
         color: #FFFFFF !important;
@@ -118,8 +104,6 @@ st.markdown("""
     div.stButton > button:first-child:hover {
         background-color: #6E4434 !important;
     }
-
-    /* Souhrnný boxík */
     .summary-card {
         background-color: #EADCD0 !important;
         padding: 15px;
@@ -133,13 +117,51 @@ st.markdown("""
 def get_headers():
     return {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
 
+def nacti_nastaveni():
+    vychozi_data = {
+        "partneri": [
+            {"PIN": VÝCHOZÍ_B2B_PIN, "Nazev": "Základní velkoodběratel", "Sleva": 40}
+        ]
+    }
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        if not os.path.exists(SETTINGS_PATH):
+            with open(SETTINGS_PATH, "w") as f:
+                json.dump(vychozi_data, f)
+        with open(SETTINGS_PATH, "r") as f:
+            return json.load(f), None
+
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{SETTINGS_PATH}"
+    res = requests.get(url, headers=get_headers())
+    if res.status_code == 200:
+        data = res.json()
+        sha = data["sha"]
+        content_str = base64.b64decode(data["content"]).decode("utf-8")
+        return json.loads(content_str), sha
+    else:
+        return vychozi_data, None
+
+def uloz_nastaveni(nastaveni_dict, sha=None):
+    obsah = json.dumps(nastaveni_dict)
+    if not GITHUB_TOKEN or not GITHUB_REPO:
+        with open(SETTINGS_PATH, "w") as f:
+            f.write(obsah)
+        return True
+
+    url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{SETTINGS_PATH}"
+    content_b64 = base64.b64encode(obsah.encode("utf-8")).decode("utf-8")
+    payload = {"message": "Aktualizace slev Deni Candle", "content": content_b64}
+    if sha:
+        payload["sha"] = sha
+    res = requests.put(url, headers=get_headers(), json=payload)
+    return res.status_code in [200, 201]
+
 def nacti_objednavky():
     if not GITHUB_TOKEN or not GITHUB_REPO:
         if not os.path.exists(FILE_PATH):
             df_empty = pd.DataFrame(columns=[
-                "ID", "Datum_Vytvoreni", "Firma_ICO", "Jmeno_Kontakt", "Telefon", "Email", 
-                "Adresa_Doruceni", "Poznamka", "Polozky_Detail", "Celkem_Ks", 
-                "Cena_Celkem_VO", "Stav_Platby"
+                "ID", "Datum_Vytvoreni", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
+                "Telefon", "Email", "Adresa_Doruceni", "Poznamka", "Polozky_Detail", 
+                "Celkem_Ks", "Sleva_Pouzita", "Cena_Celkem_VO", "Stav_Platby"
             ])
             df_empty.to_csv(FILE_PATH, index=False)
         return pd.read_csv(FILE_PATH), None
@@ -153,9 +175,9 @@ def nacti_objednavky():
         return pd.read_csv(io.StringIO(content_str)), sha
     else:
         df_empty = pd.DataFrame(columns=[
-            "ID", "Datum_Vytvoreni", "Firma_ICO", "Jmeno_Kontakt", "Telefon", "Email", 
-            "Adresa_Doruceni", "Poznamka", "Polozky_Detail", "Celkem_Ks", 
-            "Cena_Celkem_VO", "Stav_Platby"
+            "ID", "Datum_Vytvoreni", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
+            "Telefon", "Email", "Adresa_Doruceni", "Poznamka", "Polozky_Detail", 
+            "Celkem_Ks", "Sleva_Pouzita", "Cena_Celkem_VO", "Stav_Platby"
         ])
         return df_empty, None
 
@@ -175,7 +197,7 @@ def uloz_objednavky(df, sha=None):
     res = requests.put(url, headers=get_headers(), json=payload)
     return res.status_code in [200, 201]
 
-def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, celkem_ks, cena):
+def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, celkem_ks, cena, sleva):
     return f"""
     <!DOCTYPE html>
     <html lang="cs">
@@ -194,7 +216,7 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
         <div class="box">
             <div class="header">
                 <h1>🕯️ Deni Candle — B2B Potvrzení</h1>
-                <p>Velkoobchodní objednávka #{id_obj}</p>
+                <p>Velkoobchodní objednávka #{id_obj} (Aplikována sleva {sleva} %)</p>
             </div>
             <h3>Odběratel:</h3>
             <p><strong>Firma / IČO:</strong> {firma}<br><strong>Kontakt:</strong> {jmeno} ({telefon})<br><strong>Adresa doručení:</strong> {adresa}</p>
@@ -208,6 +230,11 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
     """
 
 df_orders, current_sha = nacti_objednavky()
+nastaveni_app, sha_nastaveni = nacti_nastaveni()
+
+# Převod seznamu partnerů na slovník pro rychlé vyhledávání podle PINu
+partneri_seznam = nastaveni_app.get("partneri", [{"PIN": VÝCHOZÍ_B2B_PIN, "Nazev": "Základní velkoodběratel", "Sleva": 40}])
+partneri_dict = {str(p["PIN"]): p for p in partneri_seznam}
 
 if os.path.exists(LOGO_PATH):
     st.sidebar.image(LOGO_PATH, width=140)
@@ -222,10 +249,14 @@ if rezim == "🛍️ Velkoobchodní objednávka":
     st.markdown("<h1>🕯️ Velkoobchodní portál Deni Candle</h1>", unsafe_allow_html=True)
     
     url_pin = st.query_params.get("pin", "")
-    zadan_pin = st.text_input("Zadejte přístupový B2B PIN partnera:", type="password", value=url_pin) if url_pin != B2B_PIN else B2B_PIN
+    zadan_pin = st.text_input("Zadejte přístupový B2B PIN partnera:", type="password", value=url_pin)
     
-    if zadan_pin == B2B_PIN:
-        st.success(f"✅ Přístup schválen. Uplatněna velkoobchodní sleva {VO_SLEVA_PERCENT} % z maloobchodních cen.")
+    if zadan_pin in partneri_dict:
+        aktivni_partner = partneri_dict[zadan_pin]
+        aktualni_sleva = aktivni_partner["Sleva"]
+        nazev_partnera = aktivni_partner["Nazev"]
+        
+        st.success(f"✅ Vítejte, **{nazev_partnera}**! Uplatněna vaše partnerská sleva **{aktualni_sleva} %** z maloobchodních cen.")
         
         col_katalog, col_kosik = st.columns([1.3, 1])
         
@@ -243,7 +274,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
             for idx, prod in enumerate(PRODUKTY_KATALOG):
                 target_col = col_p1 if idx % 2 == 0 else col_p2
                 cena_mo = prod["cena_mo"]
-                cena_vo = round(cena_mo * (1 - VO_SLEVA_PERCENT / 100))
+                cena_vo = round(cena_mo * (1 - aktualni_sleva / 100))
                 
                 label = f"{prod['nazev']} (VO: {cena_vo} Kč | MO: {cena_mo:.0f} Kč)"
                 ks = target_col.number_input(label, min_value=0, max_value=500, value=0, key=f"vo_{idx}")
@@ -257,7 +288,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
         with col_kosik:
             st.subheader("2. Údaje odběratele & Doručení")
             
-            firma = st.text_input("Název firmy / Název obchodu & IČO *").strip()
+            firma = st.text_input("Název firmy / Název obchodu & IČO *", value=nazev_partnera).strip()
             jmeno = st.text_input("Jméno kontaktní osoby *").strip()
             col_t, col_e = st.columns(2)
             telefon = col_t.text_input("Telefon *").strip()
@@ -294,6 +325,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                         nova_obj = pd.DataFrame([{
                             "ID": nove_id,
                             "Datum_Vytvoreni": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                            "Oznaceni_Partnera": nazev_partnera,
                             "Firma_ICO": firma,
                             "Jmeno_Kontakt": jmeno,
                             "Telefon": telefon,
@@ -302,6 +334,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             "Poznamka": poznamka,
                             "Polozky_Detail": polozky_text,
                             "Celkem_Ks": celkem_ks,
+                            "Sleva_Pouzita": f"{aktualni_sleva} %",
                             "Cena_Celkem_VO": celkova_cena_vo,
                             "Stav_Platby": "Čeká na platbu"
                         }])
@@ -311,7 +344,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             st.balloons()
                             st.success("🎉 Děkujeme! Velkoobchodní objednávka byla úspěšně přijata.")
                             
-                            html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text, celkem_ks, celkova_cena_vo)
+                            html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text, celkem_ks, celkova_cena_vo, aktualni_sleva)
                             st.download_button("📥 Stáhnout B2B Potvrzení (HTML/PDF)", html_uct, file_name=f"DeniCandle_B2B_{nove_id}.html", mime="text/html")
                             
                             spd_str = f"SPD*1.0*ACC:{BANK_ACCOUNT}/{BANK_CODE}*AM:{celkova_cena_vo:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
@@ -322,7 +355,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                         else:
                             st.error("❌ Chyba při ukládání objednávky.")
     elif zadan_pin:
-        st.error("❌ Neplatný B2B PIN.")
+        st.error("❌ Neplatný B2B PIN. Zkontrolujte prosím přístupové heslo.")
 
 # ---------------------------------------------------------
 # 2. SPRÁVA PRO MAJITELE DENI CANDLE
@@ -334,7 +367,7 @@ else:
     if heslo_admin == ADMIN_PASSWORD:
         st.success("✅ Přístup schválen.")
         
-        tab_db, tab_vyroba = st.tabs(["📋 Databáze B2B objednávek", "🕯️ Souhrn lití svíček pro dílnu"])
+        tab_db, tab_vyroba, tab_partneri = st.tabs(["📋 Databáze objednávek", "🕯️ Souhrn pro výrobu", "👥 Správa odběratelů a slev"])
         
         with tab_db:
             if not df_orders.empty:
@@ -359,3 +392,29 @@ else:
                     st.info("Žádné svíčky k výrobě.")
             else:
                 st.info("Zatím žádné objednávky v databázi.")
+                
+        with tab_partneri:
+            st.subheader("👥 Správa přístupů a individuálních slev")
+            st.write("Vytvořte svým partnerům vlastní PINy a nastavte jim přesnou výši slevy.")
+            
+            df_partneri = pd.DataFrame(partneri_seznam)
+            
+            edited_partneri = st.data_editor(
+                df_partneri,
+                num_rows="dynamic",
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "PIN": st.column_config.TextColumn("Přístupový PIN (heslo)", required=True),
+                    "Nazev": st.column_config.TextColumn("Název partnera", required=True),
+                    "Sleva": st.column_config.NumberColumn("Sleva v %", min_value=0, max_value=99, required=True, format="%d %%")
+                }
+            )
+            
+            if st.button("💾 Uložit seznam partnerů a slev", type="primary"):
+                nove_nastaveni = {"partneri": edited_partneri.to_dict('records')}
+                if uloz_nastaveni(nove_nastaveni, sha_nastaveni):
+                    st.success("✅ Úspěšně uloženo! Partneři se nyní mohou přihlásit svými PINy.")
+                    st.rerun()
+                else:
+                    st.error("❌ Při ukládání došlo k chybě.")
