@@ -111,23 +111,30 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    div.stButton > button:first-child,
+    /* Ošetření všech typů tlačítek (klasická, stahovací i formulářová) */
+    div.stButton > button,
     div.stDownloadButton > button,
-    [data-testid="stDownloadButton"] > button {
+    div.stFormSubmitButton > button,
+    [data-testid="stDownloadButton"] > button,
+    [data-testid="stFormSubmitButton"] > button {
         background-color: #8C5A47 !important;
         color: #FFFFFF !important;
         border: none !important;
         border-radius: 8px !important;
         font-weight: bold !important;
     }
-    div.stButton > button:first-child *,
+    div.stButton > button *,
     div.stDownloadButton > button *,
-    [data-testid="stDownloadButton"] > button * {
+    div.stFormSubmitButton > button *,
+    [data-testid="stDownloadButton"] > button *,
+    [data-testid="stFormSubmitButton"] > button * {
         color: #FFFFFF !important;
     }
-    div.stButton > button:first-child:hover,
+    div.stButton > button:hover,
     div.stDownloadButton > button:hover,
-    [data-testid="stDownloadButton"] > button:hover {
+    div.stFormSubmitButton > button:hover,
+    [data-testid="stDownloadButton"] > button:hover,
+    [data-testid="stFormSubmitButton"] > button:hover {
         background-color: #6E4434 !important;
     }
 
