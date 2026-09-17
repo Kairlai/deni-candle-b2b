@@ -56,7 +56,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Vynucené béžové pozadí a černé písmo
+# Kompletní úprava vzhledu - opravená tlačítka + a -
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -81,16 +81,39 @@ st.markdown("""
         border: 1px solid #E2D3C4 !important;
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
-    input, textarea, div[data-baseweb="input"] {
+    
+    /* Vstupní políčka i tlačítka + / - */
+    div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+        background-color: #FFFFFF !important;
+        border: 1px solid #C8B8A8 !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stNumberInput"] input {
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+    }
+    div[data-testid="stNumberInput"] button {
+        background-color: #EADCD0 !important;
+        border: none !important;
+        color: #1A1A1A !important;
+    }
+    div[data-testid="stNumberInput"] button:hover {
+        background-color: #D8C6B6 !important;
+    }
+    div[data-testid="stNumberInput"] button svg {
+        fill: #1A1A1A !important;
+        color: #1A1A1A !important;
+        stroke: #1A1A1A !important;
+    }
+
+    input, textarea {
         background-color: #FFFFFF !important;
         color: #1A1A1A !important;
         border: 1px solid #C8B8A8 !important;
         border-radius: 6px !important;
     }
-    button[title="Increase value"], button[title="Decrease value"] {
-        background-color: #E2D3C4 !important;
-        color: #1A1A1A !important;
-    }
+
+    /* Hlavní odesílací tlačítko */
     div.stButton > button:first-child {
         background-color: #8C5A47 !important;
         color: #FFFFFF !important;
@@ -104,6 +127,7 @@ st.markdown("""
     div.stButton > button:first-child:hover {
         background-color: #6E4434 !important;
     }
+
     .summary-card {
         background-color: #EADCD0 !important;
         padding: 15px;
@@ -232,7 +256,6 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
 df_orders, current_sha = nacti_objednavky()
 nastaveni_app, sha_nastaveni = nacti_nastaveni()
 
-# Převod seznamu partnerů na slovník pro rychlé vyhledávání podle PINu
 partneri_seznam = nastaveni_app.get("partneri", [{"PIN": VÝCHOZÍ_B2B_PIN, "Nazev": "Základní velkoodběratel", "Sleva": 40}])
 partneri_dict = {str(p["PIN"]): p for p in partneri_seznam}
 
