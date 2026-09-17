@@ -115,7 +115,7 @@ st.markdown("""
         stroke: #1A1A1A !important;
     }
 
-    /* Zobrazení PINů a kódů (odstranění černé v `code`) */
+    /* Zobrazení PINů a kódů */
     code {
         background-color: #EADCD0 !important;
         color: #1A1A1A !important;
@@ -159,19 +159,30 @@ st.markdown("""
         background-color: #6E4434 !important;
     }
 
+    /* Kompletní úprava všech tabulek */
     div[data-testid="stTable"], 
     div[data-testid="stTable"] table {
         background-color: #FAF4EE !important;
         color: #1A1A1A !important;
+        width: 100% !important;
     }
     table {
         background-color: #FAF4EE !important;
         color: #1A1A1A !important;
+        border-collapse: collapse !important;
     }
-    th, td {
+    th {
+        background-color: #EADCD0 !important;
+        color: #5C3A2E !important;
+        font-weight: bold !important;
+        border-bottom: 2px solid #C8B8A8 !important;
+        padding: 10px !important;
+    }
+    td {
         background-color: #FAF4EE !important;
         color: #1A1A1A !important;
         border-bottom: 1px solid #E2D3C4 !important;
+        padding: 8px 10px !important;
     }
 
     .summary-card {
@@ -489,7 +500,15 @@ else:
         
         with tab_db:
             if not df_orders.empty:
-                st.dataframe(df_orders, use_container_width=True, hide_index=True)
+                st.table(df_orders)
+                excel_db = vytvor_profi_excel(df_orders, titulek="Databaze_Objednavek")
+                st.download_button(
+                    label="📥 Stáhnout celou databázi do Excelu", 
+                    data=excel_db, 
+                    file_name=f"DeniCandle_Databaze_{datetime.now().strftime('%d_%m_%Y')}.xlsx", 
+                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    key="dl_db_all"
+                )
             else:
                 st.info("Zatím žádné B2B objednávky.")
                 
