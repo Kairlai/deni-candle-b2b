@@ -23,13 +23,11 @@ BANK_CODE = "0800"       # Doplňte kód banky
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", "")
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "deni2026")
-B2B_PIN = st.secrets.get("B2B_PIN", "partner2026") # Heslo pro velkoodběratele
+B2B_PIN = st.secrets.get("B2B_PIN", "partner2026")
 
-# Výchozí výše velkoobchodní slevy (40 % z maloobchodní ceny)
 VO_SLEVA_PERCENT = 40 
 MIN_OBJEDNAVKA_KC = 3000
 
-# KOMPLETNÍ KATALOG DENI CANDLE
 PRODUKTY_KATALOG = [
     {"nazev": "🎃 Dýňulka", "cena_mo": 269.0},
     {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0},
@@ -59,7 +57,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Elegantní teplý styl pro Deni Candle
+# Opravené CSS styly s vynuceným tmavým textem pro Dark Mode
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -72,32 +70,52 @@ st.markdown("""
         font-family: 'Georgia', serif;
     }
 
+    /* Karta pozadí */
     div[data-testid="stColumn"] {
-        background: #FAF7F5;
+        background: #FAF7F5 !important;
         padding: 20px;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         border-top: 5px solid #C48B71;
     }
     
+    /* Vynucení tmavé barvy pro všechny texty a popisky uvnitř i v dark modu */
+    div[data-testid="stColumn"] *, 
+    label, 
+    [data-testid="stWidgetLabel"] *, 
+    .stMarkdown p, 
+    span,
+    p {
+        color: #2C2C2C !important;
+    }
+
+    /* Vzhled vstupních políček */
+    input, textarea, select {
+        color: #2C2C2C !important;
+        background-color: #FFFFFF !important;
+    }
+    
     div.stButton > button:first-child {
-        background-color: #8C5A47;
-        color: white;
+        background-color: #8C5A47 !important;
+        color: white !important;
         border: none;
         border-radius: 8px;
         font-weight: bold;
     }
     div.stButton > button:first-child:hover {
-        background-color: #6E4434;
-        color: white;
+        background-color: #6E4434 !important;
+        color: white !important;
     }
     
     .summary-card {
-        background-color: #F4EBE6;
+        background-color: #F4EBE6 !important;
         padding: 15px;
         border-radius: 8px;
         border-left: 5px solid #8C5A47;
         margin-bottom: 20px;
+    }
+    .summary-card * {
+        color: #2C2C2C !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -155,7 +173,7 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
     <meta charset="UTF-8">
     <title>B2B Objednávka Deni Candle #{id_obj}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; color: #444; max-width: 650px; margin: 0 auto; padding: 30px; background: #fafa8; }}
+        body {{ font-family: Arial, sans-serif; color: #444; max-width: 650px; margin: 0 auto; padding: 30px; background: #fafafa; }}
         .box {{ background: #fff; padding: 30px; border-radius: 10px; border-top: 6px solid #8C5A47; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
         .header {{ text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }}
         .header h1 {{ color: #8C5A47; margin: 0; }}
