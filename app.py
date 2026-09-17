@@ -57,7 +57,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Zjednodušené CSS pouze na to nejnutnější - nezbarvujeme texty natvrdo
+# Vynucené béžové pozadí a černé písmo
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -65,26 +65,67 @@ st.markdown("""
     header {background-color: transparent !important;}
     footer {visibility: hidden;}
     
-    /* Vlastní barva hlavních tlačítek */
+    /* Vynucení béžového pozadí pro celou aplikaci i postranní panel */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
+        background-color: #FAF4EE !important;
+    }
+
+    /* Černé písmo pro všechny texty a popisky */
+    html, body, [data-testid="stAppViewContainer"] *, [data-testid="stSidebar"] * {
+        color: #1A1A1A !important;
+    }
+
+    /* Nadpisy v elegantní tmavě hnědé / černé */
+    h1, h2, h3, h4 {
+        color: #5C3A2E !important;
+        font-family: 'Georgia', serif;
+    }
+
+    /* Karta sekcí - světlější béžová s ohraničením */
+    div[data-testid="stColumn"] {
+        background: #F4EBE2 !important;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #E2D3C4 !important;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    }
+
+    /* Vstupní políčka - bílá s černým písmem */
+    input, textarea, div[data-baseweb="input"] {
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+        border: 1px solid #C8B8A8 !important;
+        border-radius: 6px !important;
+    }
+    
+    /* Tlačítka pro změnu počtu (+ / -) */
+    button[title="Increase value"], button[title="Decrease value"] {
+        background-color: #E2D3C4 !important;
+        color: #1A1A1A !important;
+    }
+
+    /* Hlavní odesílací tlačítko */
     div.stButton > button:first-child {
-        background-color: #8C5A47;
-        color: white;
+        background-color: #8C5A47 !important;
+        color: #FFFFFF !important;
         border: none;
         border-radius: 8px;
         font-weight: bold;
     }
-    div.stButton > button:first-child:hover {
-        background-color: #6E4434;
-        color: white;
+    div.stButton > button:first-child * {
+        color: #FFFFFF !important;
     }
-    
-    /* Zvýrazňovací box bez přepisování barvy textu (adaptivní na dark/light mode) */
+    div.stButton > button:first-child:hover {
+        background-color: #6E4434 !important;
+    }
+
+    /* Souhrnný boxík */
     .summary-card {
+        background-color: #EADCD0 !important;
         padding: 15px;
         border-radius: 8px;
         border-left: 5px solid #8C5A47;
         margin-bottom: 20px;
-        background-color: rgba(140, 90, 71, 0.1);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -142,7 +183,7 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
     <meta charset="UTF-8">
     <title>B2B Objednávka Deni Candle #{id_obj}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; color: #444; max-width: 650px; margin: 0 auto; padding: 30px; background: #fafafa; }}
+        body {{ font-family: Arial, sans-serif; color: #111; max-width: 650px; margin: 0 auto; padding: 30px; background: #FAF4EE; }}
         .box {{ background: #fff; padding: 30px; border-radius: 10px; border-top: 6px solid #8C5A47; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
         .header {{ text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }}
         .header h1 {{ color: #8C5A47; margin: 0; }}
@@ -160,7 +201,7 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
             <h3>Objednané zboží ({celkem_ks} ks):</h3>
             <p>{polozky_str}</p>
             <div class="total">Celková cena VO: {cena:,.0f} Kč</div>
-            <p style="margin-top:20px; font-size:12px; color:#888; text-align:center;">Děkujeme za váš odběr rukodělných svíček Deni Candle.</p>
+            <p style="margin-top:20px; font-size:12px; color:#666; text-align:center;">Děkujeme za váš odběr rukodělných svíček Deni Candle.</p>
         </div>
     </body>
     </html>
