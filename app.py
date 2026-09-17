@@ -56,7 +56,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Kompletní úprava vzhledu včetně opravy černých tabulek
+# Kompletní úprava vzhledu včetně odbarvení st.data_editor
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -134,10 +134,14 @@ st.markdown("""
         background-color: #6E4434 !important;
     }
 
-    /* Ošetření tabulek (odstranění černoty) */
+    /* Přepsání barev pro st.dataframe, st.data_editor a jejich nástrojové lišty */
     div[data-testid="stTable"], 
     div[data-testid="stTable"] table,
-    div[data-testid="stDataFrame"] {
+    div[data-testid="stDataFrame"],
+    div[data-testid="stDataEditor"],
+    div[data-testid="stDataEditor"] *,
+    div[data-testid="stElementToolbar"],
+    div[data-testid="stElementToolbar"] * {
         background-color: #FAF4EE !important;
         color: #1A1A1A !important;
     }
