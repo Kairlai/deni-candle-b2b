@@ -56,7 +56,6 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Kompletní úprava vzhledu včetně tlačítek ke stažení
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -82,7 +81,6 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     
-    /* Vstupní políčka i tlačítka + / - */
     div[data-testid="stNumberInput"] div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
         border: 1px solid #C8B8A8 !important;
@@ -226,6 +224,47 @@ def uloz_objednavky(df, sha=None):
         payload["sha"] = sha
     res = requests.put(url, headers=get_headers(), json=payload)
     return res.status_code in [200, 201]
+
+def vytvor_profi_excel(df, titulek="Objednávky"):
+    wb = Workbook()
+    ws = wb.active
+    ws.title = titulek
+    
+    for r in dataframe_to_rows(df, index=False, header=True):
+        ws.append(r)
+        
+    hlavicka_fill = PatternFill(start_color="8C5A47", end_color="8C5A47", fill_type="solid")
+    white_font = Font(color="FFFFFF", bold=True)
+    thin_border = Border(
+        left=Side(style='thin', color='DDDDDD'),
+        right=Side(style='thin', color='DDDDDD'),
+        top=Side(style='thin', color='DDDDDD'),
+        bottom=Side(style='thin', color='DDDDDD')
+    )
+    
+    for cell in ws[1]:
+        cell.fill = hlavicka_fill
+        cell.font = white_font
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        
+    for col in ws.columns:
+        max_length = 0
+        col_letter = col[0].column_letter
+        for cell in col:
+            cell.border = thin_border
+            cell.alignment = Alignment(vertical='center')
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except:
+                pass
+        ws.column_dimensions[col_letter].width = (max_length + 2)
+        
+    ws.auto_filter.ref = ws.dimensions
+    
+    output = BytesIO()
+    wb.save(output)
+    return output.getvalue()
 
 def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, celkem_ks, cena, sleva):
     return f"""
@@ -405,8 +444,9 @@ else:
                 st.info("Zatím žádné B2B objednávky.")
                 
         with tab_vyroba:
-            st.subheader("🕯️ Celkový počet svíček k odlítí")
             if not df_orders.empty:
+                # --- CELKOVÝ SOUHRN ---
+                st.markdown("### 🌍 Celkový souhrn (Vše k odlítí)")
                 vsechny_polozky = []
                 for detail in df_orders["Polozky_Detail"].dropna():
                     for item in detail.split(", "):
@@ -416,9 +456,56 @@ else:
                 
                 if vsechny_polozky:
                     df_sum = pd.DataFrame(vsechny_polozky).groupby("Produkt").sum().reset_index()
-                    st.table(df_sum)
+                    st.dataframe(df_sum, use_container_width=True, hide_index=True)
+                    
+                    excel_data = vytvor_profi_excel(df_sum, titulek="Celkovy_Souhrn")
+                    st.download_button(
+                        label="📥 Stáhnout celkový souhrn do Excelu", 
+                        data=excel_data, 
+                        file_name=f"DeniCandle_CelkovaVyroba_{datetime.now().strftime('%d_%m')}.xlsx", 
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        key="dl_all"
+                    )
                 else:
                     st.info("Žádné svíčky k výrobě.")
+                
+                st.divider()
+                
+                # --- ROZPIS PODLE JEDNOTLIVÝCH OBJEDNÁVEK ---
+                st.markdown("### 📦 Výroba podle konkrétních objednávek")
+                st.write("Kliknutím na objednávku zobrazíte přesný rozpis a možnost stažení vlastního Excelu pro daného partnera.")
+                
+                # Seřadíme objednávky od nejnovější po nejstarší
+                df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
+                
+                for idx, row in df_orders_sorted.iterrows():
+                    id_obj = row['ID']
+                    partner = row['Oznaceni_Partnera']
+                    datum = row['Datum_Vytvoreni']
+                    
+                    with st.expander(f"Objednávka #{id_obj} — {partner} ({datum})"):
+                        polozky_obj = []
+                        detail = row["Polozky_Detail"]
+                        if pd.notna(detail):
+                            for item in str(detail).split(", "):
+                                if "x " in item:
+                                    ks, název = item.split("x ", 1)
+                                    polozky_obj.append({"Produkt": název, "Ks": int(ks)})
+                        
+                        if polozky_obj:
+                            df_obj = pd.DataFrame(polozky_obj).groupby("Produkt").sum().reset_index()
+                            st.table(df_obj)
+                            
+                            excel_obj = vytvor_profi_excel(df_obj, titulek=f"Objednavka_{id_obj}")
+                            st.download_button(
+                                label=f"📥 Stáhnout Excel pro objednávku #{id_obj}", 
+                                data=excel_obj, 
+                                file_name=f"DeniCandle_Vyroba_Obj_{id_obj}.xlsx", 
+                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                                key=f"dl_obj_{id_obj}"
+                            )
+                        else:
+                            st.write("V této objednávce nejsou žádné položky.")
             else:
                 st.info("Zatím žádné objednávky v databázi.")
                 
