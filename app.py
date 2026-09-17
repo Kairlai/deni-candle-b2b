@@ -25,8 +25,6 @@ GITHUB_REPO = st.secrets.get("GITHUB_REPO", "")
 ADMIN_PASSWORD = st.secrets.get("ADMIN_PASSWORD", "deni2026")
 VÝCHOZÍ_B2B_PIN = st.secrets.get("B2B_PIN", "partner2026")
 
-MIN_OBJEDNAVKA_KC = 3000
-
 PRODUKTY_KATALOG = [
     {"nazev": "🎃 Dýňulka", "cena_mo": 269.0},
     {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0},
@@ -397,7 +395,6 @@ if rezim == "🛍️ Velkoobchodní objednávka":
         
         with col_katalog:
             st.subheader("1. Výběr svíček a produktů")
-            st.caption(f"Minimální odběr pro VO cenu je {MIN_OBJEDNAVKA_KC:,.0f} Kč.")
             
             col_p1, col_p2 = st.columns(2)
             
@@ -439,14 +436,11 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 </div>
             """, unsafe_allow_html=True)
             
-            if celkova_cena_vo < MIN_OBJEDNAVKA_KC and celkova_cena_vo > 0:
-                st.warning(f"⚠️ Minimální hodnota velkoobchodní objednávky je {MIN_OBJEDNAVKA_KC} Kč. Chybí ještě {MIN_OBJEDNAVKA_KC - celkova_cena_vo} Kč.")
-            
             if st.button("Odeslat velkoobchodní objednávku", type="primary", use_container_width=True):
                 if not all([firma, jmeno, telefon, email, adresa]):
                     st.warning("⚠️ Prosím vyplňte všechny kontaktní a firemní údaje.")
-                elif celkova_cena_vo < MIN_OBJEDNAVKA_KC:
-                    st.error(f"❌ Minimální částka objednávky není splněna ({MIN_OBJEDNAVKA_KC} Kč).")
+                elif celkem_ks == 0:
+                    st.error("❌ Košík je prázdný. Vyberte prosím alespoň jednu svíčku.")
                 else:
                     with st.spinner('Odesílám VO objednávku... 🕯️'):
                         nove_id = 1 if df_orders.empty else int(df_orders["ID"].max()) + 1
@@ -571,7 +565,6 @@ else:
                 st.info("Zatím žádné B2B objednávky.")
                 
         with tab_vyroba:
-            # Filtrujeme pouze aktivní objednávky (K výrobě)
             df_k_vyrobe = df_orders[df_orders.get('Stav_Vyroby', 'K výrobě') == 'K výrobě'] if not df_orders.empty else pd.DataFrame()
             
             if not df_k_vyrobe.empty:
