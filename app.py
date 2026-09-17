@@ -42,7 +42,7 @@ DOPRAVA_ZDARMA_OD = 5000
 # Katalog produktů s podporou fotek (možno doplnit cestu např. "foto/dynulka.jpg" nebo URL)
 PRODUKTY_KATALOG = [
    {"nazev": "🎃 Dýňulka", "cena_mo": 269.0, "foto": "dynulka.jpg"},
-    {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0, "foto": "https://3d952210f4.clvaw-cdnwnd.com/9a8475ef24e98590b5d08e355c1d24a8/200000170-2002120023/Gemini_Generated_Image_%20%289%29.webp?ph=3d952210f4"},
+    {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0, "foto": ""},
     {"nazev": "🎃 Dýňový okamžik", "cena_mo": 359.0, "foto": ""},
     {"nazev": "⛄ Dýňulka sněhulka", "cena_mo": 269.0, "foto": ""},
     {"nazev": "🍋 Citronela", "cena_mo": 259.9, "foto": ""},
