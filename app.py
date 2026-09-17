@@ -41,7 +41,7 @@ DOPRAVA_ZDARMA_OD = 5000
 
 # Katalog produktů s podporou fotek (možno doplnit cestu např. "foto/dynulka.jpg" nebo URL)
 PRODUKTY_KATALOG = [
-    {"nazev": "🎃 Dýňulka", "cena_mo": 269.0, "foto": ""},
+    {"nazev": "🎃 Dýňulka", "cena_mo": 269.0, "dynulka.jpg": ""},
     {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0, "foto": ""},
     {"nazev": "🎃 Dýňový okamžik", "cena_mo": 359.0, "foto": ""},
     {"nazev": "⛄ Dýňulka sněhulka", "cena_mo": 269.0, "foto": ""},
