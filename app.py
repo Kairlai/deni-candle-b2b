@@ -81,10 +81,21 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     
-    div[data-testid="stNumberInput"] div[data-baseweb="input"] {
+    /* Vstupní políčka, tlačítka + / - a tlačítko oka u hesla */
+    div[data-testid="stNumberInput"] div[data-baseweb="input"],
+    div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
         border: 1px solid #C8B8A8 !important;
         border-radius: 8px !important;
+    }
+    div[data-baseweb="input"] button,
+    div[data-baseweb="input"] div {
+        background-color: #EADCD0 !important;
+        border: none !important;
+    }
+    div[data-baseweb="input"] button svg {
+        fill: #1A1A1A !important;
+        color: #1A1A1A !important;
     }
     div[data-testid="stNumberInput"] input {
         background-color: #FFFFFF !important;
@@ -104,6 +115,16 @@ st.markdown("""
         stroke: #1A1A1A !important;
     }
 
+    /* Zobrazení PINů a kódů (odstranění černé v `code`) */
+    code {
+        background-color: #EADCD0 !important;
+        color: #1A1A1A !important;
+        border: 1px solid #C8B8A8 !important;
+        padding: 2px 6px !important;
+        border-radius: 4px !important;
+        font-weight: bold !important;
+    }
+
     input, textarea {
         background-color: #FFFFFF !important;
         color: #1A1A1A !important;
@@ -111,7 +132,7 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    /* Ošetření všech typů tlačítek (klasická, stahovací i formulářová) */
+    /* Tlačítka */
     div.stButton > button,
     div.stDownloadButton > button,
     div.stFormSubmitButton > button,
