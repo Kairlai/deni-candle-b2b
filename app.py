@@ -241,15 +241,21 @@ def uloz_nastaveni(nastaveni_dict, sha=None):
     return res.status_code in [200, 201]
 
 def nacti_objednavky():
+    sloupce = [
+        "ID", "Datum_Vytvoreni", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
+        "Telefon", "Email", "Adresa_Doruceni", "Poznamka", "Polozky_Detail", 
+        "Celkem_Ks", "Sleva_Pouzita", "Cena_Celkem_VO", "Stav_Platby", "Stav_Vyroby"
+    ]
+    
     if not GITHUB_TOKEN or not GITHUB_REPO:
         if not os.path.exists(FILE_PATH):
-            df_empty = pd.DataFrame(columns=[
-                "ID", "Datum_Vytvoreni", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
-                "Telefon", "Email", "Adresa_Doruceni", "Poznamka", "Polozky_Detail", 
-                "Celkem_Ks", "Sleva_Pouzita", "Cena_Celkem_VO", "Stav_Platby"
-            ])
+            df_empty = pd.DataFrame(columns=sloupce)
             df_empty.to_csv(FILE_PATH, index=False)
-        return pd.read_csv(FILE_PATH), None
+            return df_empty, None
+        df = pd.read_csv(FILE_PATH)
+        if "Stav_Vyroby" not in df.columns:
+            df["Stav_Vyroby"] = "K výrobě"
+        return df, None
 
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{FILE_PATH}"
     res = requests.get(url, headers=get_headers())
@@ -257,13 +263,12 @@ def nacti_objednavky():
         data = res.json()
         sha = data["sha"]
         content_str = base64.b64decode(data["content"]).decode("utf-8")
-        return pd.read_csv(io.StringIO(content_str)), sha
+        df = pd.read_csv(io.StringIO(content_str))
+        if "Stav_Vyroby" not in df.columns:
+            df["Stav_Vyroby"] = "K výrobě"
+        return df, sha
     else:
-        df_empty = pd.DataFrame(columns=[
-            "ID", "Datum_Vytvoreni", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
-            "Telefon", "Email", "Adresa_Doruceni", "Poznamka", "Polozky_Detail", 
-            "Celkem_Ks", "Sleva_Pouzita", "Cena_Celkem_VO", "Stav_Platby"
-        ])
+        df_empty = pd.DataFrame(columns=sloupce)
         return df_empty, None
 
 def uloz_objednavky(df, sha=None):
@@ -461,7 +466,8 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             "Celkem_Ks": celkem_ks,
                             "Sleva_Pouzita": f"{aktualni_sleva} %",
                             "Cena_Celkem_VO": celkova_cena_vo,
-                            "Stav_Platby": "Čeká na platbu"
+                            "Stav_Platby": "Čeká na platbu",
+                            "Stav_Vyroby": "K výrobě"
                         }])
                         
                         df_aktualni = pd.concat([df_orders, nova_obj], ignore_index=True)
@@ -516,8 +522,11 @@ else:
                     datum = row['Datum_Vytvoreni']
                     partner = row['Oznaceni_Partnera']
                     cena = row['Cena_Celkem_VO']
+                    stav_v = row.get('Stav_Vyroby', 'K výrobě')
                     
-                    with st.expander(f"🛒 Objednávka #{id_obj} — {partner} | {cena:,.0f} Kč | {datum}"):
+                    ikona_stavu = "🔥" if stav_v == "K výrobě" else "✅"
+                    
+                    with st.expander(f"{ikona_stavu} Objednávka #{id_obj} — {partner} | {cena:,.0f} Kč | {datum} ({stav_v})"):
                         c1, c2 = st.columns(2)
                         
                         with c1:
@@ -531,25 +540,45 @@ else:
                             st.markdown(f"**🏷️ Použitá sleva:** {row['Sleva_Pouzita']}")
                             st.markdown(f"**💰 Celková cena (VO):** {cena:,.0f} Kč")
                             st.markdown(f"**📦 Celkem kusů:** {row['Celkem_Ks']} ks")
+                            st.markdown(f"**📌 Stav zakázky:** `{stav_v}`")
                             
                             poznamka = row['Poznamka']
                             if pd.notna(poznamka) and str(poznamka).strip() != "":
                                 st.markdown(f"**📝 Poznámka:** {poznamka}")
-                            else:
-                                st.markdown("**📝 Poznámka:** -")
                         
                         st.markdown("**🛍️ Objednané položky:**")
                         st.info(row['Polozky_Detail'])
+                        
+                        col_b1, col_b2 = st.columns(2)
+                        if stav_v == "K výrobě":
+                            if col_b1.button(f"✅ Označit #{id_obj} jako vyřízenou/odlitou", key=f"done_db_{id_obj}"):
+                                df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'Vyřízeno'
+                                uloz_objednavky(df_orders, current_sha)
+                                st.success("✅ Změněno na Vyřízeno.")
+                                st.rerun()
+                        else:
+                            if col_b1.button(f"🔄 Vrátit #{id_obj} zpět k výrobě", key=f"reopen_db_{id_obj}"):
+                                df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'K výrobě'
+                                uloz_objednavky(df_orders, current_sha)
+                                st.rerun()
+                                
+                        if col_b2.button(f"🗑️ Smazat objednávku #{id_obj}", key=f"del_db_{id_obj}"):
+                            df_orders = df_orders[df_orders['ID'] != id_obj]
+                            uloz_objednavky(df_orders, current_sha)
+                            st.success("🗑️ Objednávka smazána.")
+                            st.rerun()
             else:
                 st.info("Zatím žádné B2B objednávky.")
                 
         with tab_vyroba:
-            if not df_orders.empty:
-                st.markdown("### 📊 Výrobní matice (Přehled podle objednávek)")
+            # Filtrujeme pouze aktivní objednávky (K výrobě)
+            df_k_vyrobe = df_orders[df_orders.get('Stav_Vyroby', 'K výrobě') == 'K výrobě'] if not df_orders.empty else pd.DataFrame()
+            
+            if not df_k_vyrobe.empty:
+                st.markdown("### 📊 Výrobní matice (Pouze nezpracované zakázky)")
                 
-                # Sestavení matice (Řádky = Produkty, Sloupce = Objednávky)
                 matrix_rows = []
-                for idx, row in df_orders.iterrows():
+                for idx, row in df_k_vyrobe.iterrows():
                     id_obj = row['ID']
                     partner = row['Oznaceni_Partnera']
                     col_label = f"Obj #{id_obj} ({partner})"
@@ -565,11 +594,9 @@ else:
                     df_matrix_raw = pd.DataFrame(matrix_rows)
                     df_pivot = df_matrix_raw.pivot_table(index="Produkt", columns="Col", values="Ks", aggfunc="sum", fill_value=0)
                     
-                    # Přidání celkového součtu
                     df_pivot["CELKEM KS"] = df_pivot.sum(axis=1)
                     df_pivot = df_pivot.sort_values(by="CELKEM KS", ascending=False).reset_index()
                     
-                    # Nahrazení nuly pomlčkou pro čistší vzhled
                     df_pivot_display = df_pivot.copy()
                     for col in df_pivot_display.columns:
                         if col not in ["Produkt", "CELKEM KS"]:
@@ -581,7 +608,7 @@ else:
                     
                     excel_data = vytvor_profi_excel(df_pivot, titulek="Vyrobni_Matice")
                     st.download_button(
-                        label="📥 Stáhnout celou výrobní matici do Excelu", 
+                        label="📥 Stáhnout výrobní matici do Excelu", 
                         data=excel_data, 
                         file_name=f"DeniCandle_VyrobniMatice_{datetime.now().strftime('%d_%m')}.xlsx", 
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -592,10 +619,10 @@ else:
                 
                 st.divider()
                 
-                st.markdown("### 📦 Samostatné rozpisky pro jednotlivé zakázky")
-                df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
+                st.markdown("### 📦 Samostatné rozpisky k odlítí")
+                df_k_vyrobe_sorted = df_k_vyrobe.sort_values(by="ID", ascending=False)
                 
-                for idx, row in df_orders_sorted.iterrows():
+                for idx, row in df_k_vyrobe_sorted.iterrows():
                     id_obj = row['ID']
                     partner = row['Oznaceni_Partnera']
                     datum = row['Datum_Vytvoreni']
@@ -613,18 +640,22 @@ else:
                             df_obj = pd.DataFrame(polozky_obj).groupby("Produkt").sum().reset_index()
                             st.table(df_obj)
                             
+                            c_m1, c_m2 = st.columns(2)
                             excel_obj = vytvor_profi_excel(df_obj, titulek=f"Objednavka_{id_obj}")
-                            st.download_button(
-                                label=f"📥 Stáhnout Excel pro objednávku #{id_obj}", 
+                            c_m1.download_button(
+                                label=f"📥 Excel pro objednávku #{id_obj}", 
                                 data=excel_obj, 
                                 file_name=f"DeniCandle_Vyroba_Obj_{id_obj}.xlsx", 
                                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                 key=f"dl_obj_{id_obj}"
                             )
-                        else:
-                            st.write("V této objednávce nejsou žádné položky.")
+                            
+                            if c_m2.button(f"✅ Hotovo / Odlito (Vyřídit #{id_obj})", key=f"done_vyroba_{id_obj}"):
+                                df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'Vyřízeno'
+                                uloz_objednavky(df_orders, current_sha)
+                                st.rerun()
             else:
-                st.info("Zatím žádné objednávky v databázi.")
+                st.success("🎉 Skvělé! Všechny svíčky jsou odlité a žádné objednávky nečekají na výrobu.")
                 
         with tab_partneri:
             st.markdown("### ➕ Přidat nového partnera")
