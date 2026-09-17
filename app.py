@@ -56,7 +56,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Kompletní úprava vzhledu - opravená tlačítka + a -
+# Kompletní úprava vzhledu včetně tlačítek ke stažení
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -113,18 +113,24 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    /* Hlavní odesílací tlačítko */
-    div.stButton > button:first-child {
+    /* Hlavní odesílací tlačítka I stahovací tlačítka */
+    div.stButton > button:first-child,
+    div.stDownloadButton > button,
+    [data-testid="stDownloadButton"] > button {
         background-color: #8C5A47 !important;
         color: #FFFFFF !important;
-        border: none;
-        border-radius: 8px;
-        font-weight: bold;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: bold !important;
     }
-    div.stButton > button:first-child * {
+    div.stButton > button:first-child *,
+    div.stDownloadButton > button *,
+    [data-testid="stDownloadButton"] > button * {
         color: #FFFFFF !important;
     }
-    div.stButton > button:first-child:hover {
+    div.stButton > button:first-child:hover,
+    div.stDownloadButton > button:hover,
+    [data-testid="stDownloadButton"] > button:hover {
         background-color: #6E4434 !important;
     }
 
