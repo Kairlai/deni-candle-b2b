@@ -56,6 +56,7 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
+# Kompletní úprava vzhledu včetně opravy černých tabulek
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -81,6 +82,7 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     
+    /* Vstupní políčka i tlačítka + / - */
     div[data-testid="stNumberInput"] div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
         border: 1px solid #C8B8A8 !important;
@@ -130,6 +132,23 @@ st.markdown("""
     div.stDownloadButton > button:hover,
     [data-testid="stDownloadButton"] > button:hover {
         background-color: #6E4434 !important;
+    }
+
+    /* Ošetření tabulek (odstranění černoty) */
+    div[data-testid="stTable"], 
+    div[data-testid="stTable"] table,
+    div[data-testid="stDataFrame"] {
+        background-color: #FAF4EE !important;
+        color: #1A1A1A !important;
+    }
+    table {
+        background-color: #FAF4EE !important;
+        color: #1A1A1A !important;
+    }
+    th, td {
+        background-color: #FAF4EE !important;
+        color: #1A1A1A !important;
+        border-bottom: 1px solid #E2D3C4 !important;
     }
 
     .summary-card {
@@ -456,7 +475,7 @@ else:
                 
                 if vsechny_polozky:
                     df_sum = pd.DataFrame(vsechny_polozky).groupby("Produkt").sum().reset_index()
-                    st.dataframe(df_sum, use_container_width=True, hide_index=True)
+                    st.table(df_sum)
                     
                     excel_data = vytvor_profi_excel(df_sum, titulek="Celkovy_Souhrn")
                     st.download_button(
@@ -475,7 +494,6 @@ else:
                 st.markdown("### 📦 Výroba podle konkrétních objednávek")
                 st.write("Kliknutím na objednávku zobrazíte přesný rozpis a možnost stažení vlastního Excelu pro daného partnera.")
                 
-                # Seřadíme objednávky od nejnovější po nejstarší
                 df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
                 
                 for idx, row in df_orders_sorted.iterrows():
