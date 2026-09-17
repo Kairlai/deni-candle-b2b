@@ -81,7 +81,6 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     
-    /* Vstupní políčka, tlačítka + / - a tlačítko oka u hesla */
     div[data-testid="stNumberInput"] div[data-baseweb="input"],
     div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
@@ -115,7 +114,6 @@ st.markdown("""
         stroke: #1A1A1A !important;
     }
 
-    /* Zobrazení PINů a kódů */
     code {
         background-color: #EADCD0 !important;
         color: #1A1A1A !important;
@@ -132,7 +130,6 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    /* Tlačítka */
     div.stButton > button,
     div.stDownloadButton > button,
     div.stFormSubmitButton > button,
@@ -159,7 +156,6 @@ st.markdown("""
         background-color: #6E4434 !important;
     }
 
-    /* Kompletní úprava všech tabulek */
     div[data-testid="stTable"], 
     div[data-testid="stTable"] table {
         background-color: #FAF4EE !important;
@@ -500,15 +496,52 @@ else:
         
         with tab_db:
             if not df_orders.empty:
-                st.table(df_orders)
+                st.markdown("### 📋 Přehled přijatých objednávek")
+                
+                # Tlačítko pro stažení celé DB do Excelu nahoře
                 excel_db = vytvor_profi_excel(df_orders, titulek="Databaze_Objednavek")
                 st.download_button(
-                    label="📥 Stáhnout celou databázi do Excelu", 
+                    label="📥 Stáhnout kompletní databázi do Excelu", 
                     data=excel_db, 
                     file_name=f"DeniCandle_Databaze_{datetime.now().strftime('%d_%m_%Y')}.xlsx", 
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     key="dl_db_all"
                 )
+                
+                st.divider()
+                
+                # Výpis objednávek přes rozbalovací karty (od nejnovější po nejstarší)
+                df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
+                
+                for idx, row in df_orders_sorted.iterrows():
+                    id_obj = row['ID']
+                    datum = row['Datum_Vytvoreni']
+                    partner = row['Oznaceni_Partnera']
+                    cena = row['Cena_Celkem_VO']
+                    
+                    with st.expander(f"🛒 Objednávka #{id_obj} — {partner} | {cena:,.0f} Kč | {datum}"):
+                        c1, c2 = st.columns(2)
+                        
+                        with c1:
+                            st.markdown(f"**🏢 Odběratel:** {row['Firma_ICO']}")
+                            st.markdown(f"**👤 Kontakt:** {row['Jmeno_Kontakt']}")
+                            st.markdown(f"**📞 Telefon:** {row['Telefon']}")
+                            st.markdown(f"**✉️ E-mail:** {row['Email']}")
+                            st.markdown(f"**📍 Adresa:** {row['Adresa_Doruceni']}")
+                            
+                        with c2:
+                            st.markdown(f"**🏷️ Použitá sleva:** {row['Sleva_Pouzita']}")
+                            st.markdown(f"**💰 Celková cena (VO):** {cena:,.0f} Kč")
+                            st.markdown(f"**📦 Celkem kusů:** {row['Celkem_Ks']} ks")
+                            
+                            poznamka = row['Poznamka']
+                            if pd.notna(poznamka) and str(poznamka).strip() != "":
+                                st.markdown(f"**📝 Poznámka:** {poznamka}")
+                            else:
+                                st.markdown("**📝 Poznámka:** -")
+                        
+                        st.markdown("**🛍️ Objednané položky:**")
+                        st.info(row['Polozky_Detail'])
             else:
                 st.info("Zatím žádné B2B objednávky.")
                 
@@ -532,7 +565,7 @@ else:
                         data=excel_data, 
                         file_name=f"DeniCandle_CelkovaVyroba_{datetime.now().strftime('%d_%m')}.xlsx", 
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key="dl_all"
+                        key="dl_all_vyroba"
                     )
                 else:
                     st.info("Žádné svíčky k výrobě.")
