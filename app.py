@@ -56,7 +56,6 @@ PRODUKTY_KATALOG = [
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
-# Kompletní úprava vzhledu včetně odbarvení st.data_editor
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -82,7 +81,6 @@ st.markdown("""
         box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
     
-    /* Vstupní políčka i tlačítka + / - */
     div[data-testid="stNumberInput"] div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
         border: 1px solid #C8B8A8 !important;
@@ -113,7 +111,6 @@ st.markdown("""
         border-radius: 6px !important;
     }
 
-    /* Hlavní odesílací tlačítka I stahovací tlačítka */
     div.stButton > button:first-child,
     div.stDownloadButton > button,
     [data-testid="stDownloadButton"] > button {
@@ -134,14 +131,8 @@ st.markdown("""
         background-color: #6E4434 !important;
     }
 
-    /* Přepsání barev pro st.dataframe, st.data_editor a jejich nástrojové lišty */
     div[data-testid="stTable"], 
-    div[data-testid="stTable"] table,
-    div[data-testid="stDataFrame"],
-    div[data-testid="stDataEditor"],
-    div[data-testid="stDataEditor"] *,
-    div[data-testid="stElementToolbar"],
-    div[data-testid="stElementToolbar"] * {
+    div[data-testid="stTable"] table {
         background-color: #FAF4EE !important;
         color: #1A1A1A !important;
     }
@@ -161,6 +152,14 @@ st.markdown("""
         border-radius: 8px;
         border-left: 5px solid #8C5A47;
         margin-bottom: 20px;
+    }
+    
+    .partner-row {
+        background-color: #FFFFFF;
+        padding: 12px 18px;
+        border-radius: 8px;
+        border: 1px solid #E2D3C4;
+        margin-bottom: 10px;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -468,7 +467,6 @@ else:
                 
         with tab_vyroba:
             if not df_orders.empty:
-                # --- CELKOVÝ SOUHRN ---
                 st.markdown("### 🌍 Celkový souhrn (Vše k odlítí)")
                 vsechny_polozky = []
                 for detail in df_orders["Polozky_Detail"].dropna():
@@ -494,7 +492,6 @@ else:
                 
                 st.divider()
                 
-                # --- ROZPIS PODLE JEDNOTLIVÝCH OBJEDNÁVEK ---
                 st.markdown("### 📦 Výroba podle konkrétních objednávek")
                 st.write("Kliknutím na objednávku zobrazíte přesný rozpis a možnost stažení vlastního Excelu pro daného partnera.")
                 
@@ -532,27 +529,44 @@ else:
                 st.info("Zatím žádné objednávky v databázi.")
                 
         with tab_partneri:
-            st.subheader("👥 Správa přístupů a individuálních slev")
-            st.write("Vytvořte svým partnerům vlastní PINy a nastavte jim přesnou výši slevy.")
+            st.markdown("### ➕ Přidat nového partnera")
+            with st.form("form_novy_partner", clear_on_submit=True):
+                col_p1, col_p2, col_p3 = st.columns([2, 3, 2])
+                n_pin = col_p1.text_input("Přístupový PIN (heslo) *").strip()
+                n_nazev = col_p2.text_input("Název partnera / obchodu *").strip()
+                n_sleva = col_p3.number_input("Sleva v %", min_value=0, max_value=99, value=40)
+                
+                btn_pridat = st.form_submit_button("➕ Uložit nového partnera")
+                if btn_pridat:
+                    if not n_pin or not n_nazev:
+                        st.warning("⚠️ Vyplňte prosím PIN i název partnera.")
+                    else:
+                        existujici_piny = [str(p["PIN"]) for p in partneri_seznam]
+                        if n_pin in existujici_piny:
+                            st.error("❌ Tento PIN už používá jiný partner. Zvolte jiný.")
+                        else:
+                            partneri_seznam.append({"PIN": n_pin, "Nazev": n_nazev, "Sleva": int(n_sleva)})
+                            if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
+                                st.success(f"✅ Partner **{n_nazev}** byl úspěšně přidán!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Chyba při ukládání.")
+
+            st.divider()
+            st.markdown("### 👥 Seznam aktivních odběratelů a slev")
             
-            df_partneri = pd.DataFrame(partneri_seznam)
-            
-            edited_partneri = st.data_editor(
-                df_partneri,
-                num_rows="dynamic",
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "PIN": st.column_config.TextColumn("Přístupový PIN (heslo)", required=True),
-                    "Nazev": st.column_config.TextColumn("Název partnera", required=True),
-                    "Sleva": st.column_config.NumberColumn("Sleva v %", min_value=0, max_value=99, required=True, format="%d %%")
-                }
-            )
-            
-            if st.button("💾 Uložit seznam partnerů a slev", type="primary"):
-                nove_nastaveni = {"partneri": edited_partneri.to_dict('records')}
-                if uloz_nastaveni(nove_nastaveni, sha_nastaveni):
-                    st.success("✅ Úspěšně uloženo! Partneři se nyní mohou přihlásit svými PINy.")
+            partneri_ke_smazani = []
+            for i, p in enumerate(partneri_seznam):
+                col1, col2, col3, col4 = st.columns([2, 3, 2, 1.2])
+                col1.write(f"🔑 **PIN:** `{p['PIN']}`")
+                col2.write(f"🏪 **Partner:** {p['Nazev']}")
+                col3.write(f"🏷️ **Sleva:** {p['Sleva']} %")
+                if col4.button("🗑️ Smazat", key=f"del_partner_{i}"):
+                    partneri_ke_smazani.append(i)
+                    
+            if partneri_ke_smazani:
+                for idx in sorted(partneri_ke_smazani, reverse=True):
+                    partneri_seznam.pop(idx)
+                if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
+                    st.success("✅ Partner byl smazán.")
                     st.rerun()
-                else:
-                    st.error("❌ Při ukládání došlo k chybě.")
