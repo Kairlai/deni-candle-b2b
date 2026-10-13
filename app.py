@@ -284,7 +284,16 @@ Váš B2B systém Deni Candle
 def nacti_nastaveni():
     vychozi_data = {
         "partneri": [
-            {"PIN": VÝCHOZÍ_B2B_PIN, "Nazev": "Základní velkoodběratel", "Sleva": 40}
+            {
+                "PIN": VÝCHOZÍ_B2B_PIN, 
+                "Nazev": "Základní velkoodběratel", 
+                "Firma_ICO": "Svíčky s.r.o., IČO: 12345678",
+                "Jmeno": "Jana Nováková",
+                "Telefon": "+420 777 123 456",
+                "Email": "info@partner.cz",
+                "Adresa": "Nádražní 15, 301 00 Plzeň",
+                "Sleva": 40
+            }
         ]
     }
     if not GITHUB_TOKEN or not GITHUB_REPO:
@@ -313,7 +322,7 @@ def uloz_nastaveni(nastaveni_dict, sha=None):
 
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{SETTINGS_PATH}"
     content_b64 = base64.b64encode(obsah.encode("utf-8")).decode("utf-8")
-    payload = {"message": "Aktualizace slev Deni Candle", "content": content_b64}
+    payload = {"message": "Aktualizace odběratelů Deni Candle", "content": content_b64}
     if sha:
         payload["sha"] = sha
     res = requests.put(url, headers=get_headers(), json=payload)
@@ -513,7 +522,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
     if zadan_pin in partneri_dict:
         aktivni_partner = partneri_dict[zadan_pin]
         aktualni_sleva = aktivni_partner["Sleva"]
-        nazev_partnera = aktivni_partner["Nazev"]
+        nazev_partnera = aktivni_partner.get("Nazev", "")
         
         st.success(f"✅ Vítejte, **{nazev_partnera}**! Uplatněna vaše partnerská sleva **{aktualni_sleva} %** z maloobchodních cen.")
         
@@ -566,12 +575,19 @@ if rezim == "🛍️ Velkoobchodní objednávka":
             with col_kosik:
                 st.subheader("2. Údaje & Způsob dopravy")
                 
-                firma = st.text_input("Název firmy / Obchodu & IČO *", value=nazev_partnera).strip()
-                jmeno = st.text_input("Jméno kontaktní osoby *").strip()
+                # AUTOMATICKÉ PŘEDVYPLNĚNÍ Z PROFILU ODBĚRATELE
+                vychozi_firma = aktivni_partner.get("Firma_ICO") or aktivni_partner.get("Nazev", "")
+                vychozi_jmeno = aktivni_partner.get("Jmeno", "")
+                vychozi_telefon = aktivni_partner.get("Telefon", "")
+                vychozi_email = aktivni_partner.get("Email", "")
+                vychozi_adresa = aktivni_partner.get("Adresa", "")
+                
+                firma = st.text_input("Název firmy / Obchodu & IČO *", value=vychozi_firma).strip()
+                jmeno = st.text_input("Jméno kontaktní osoby *", value=vychozi_jmeno).strip()
                 col_t, col_e = st.columns(2)
-                telefon = col_t.text_input("Telefon *").strip()
-                email = col_e.text_input("E-mail *").strip()
-                adresa = st.text_area("Doručovací adresa (Ulice, ČP, Město, PSČ) *", height=80).strip()
+                telefon = col_t.text_input("Telefon *", value=vychozi_telefon).strip()
+                email = col_e.text_input("E-mail *", value=vychozi_email).strip()
+                adresa = st.text_area("Doručovací adresa (Ulice, ČP, Město, PSČ) *", value=vychozi_adresa, height=80).strip()
                 
                 st.markdown("**🚚 Výběr dopravy:**")
                 zvolena_doprava_nazev = st.radio("Způsob doručení:", list(DOPRAVA_MOZNOSTI.keys()))
@@ -859,40 +875,78 @@ else:
                 st.success("🎉 Skvělé! Všechny svíčky jsou odlité a žádné objednávky nečekají na výrobu.")
                 
         with tab_partneri:
-            st.markdown("### ➕ Přidat nového partnera")
+            st.markdown("### ➕ Založit nového velkoodběratele (Kompletní profil)")
             with st.form("form_novy_partner", clear_on_submit=True):
-                col_p1, col_p2, col_p3 = st.columns([2, 3, 2])
-                n_pin = col_p1.text_input("Přístupový PIN (heslo) *").strip()
-                n_nazev = col_p2.text_input("Název partnera / obchodu *").strip()
+                col_p1, col_p2, col_p3 = st.columns([1.5, 2.5, 1])
+                n_pin = col_p1.text_input("Přístupový PIN (heslo partnera) *").strip()
+                n_nazev = col_p2.text_input("Zkrácený název partnera (např. Květiny Rosa) *").strip()
                 n_sleva = col_p3.number_input("Sleva v %", min_value=0, max_value=99, value=40)
                 
-                btn_pridat = st.form_submit_button("➕ Uložit nového partnera")
+                col_f1, col_f2 = st.columns(2)
+                n_firma = col_f1.text_input("Firma / Obchod & IČO * (pro fakturaci)").strip()
+                n_jmeno = col_f2.text_input("Jméno kontaktní osoby *").strip()
+                
+                col_c1, col_c2 = st.columns(2)
+                n_telefon = col_c1.text_input("Telefon *").strip()
+                n_email = col_c2.text_input("E-mail *").strip()
+                
+                n_adresa = st.text_area("Výchozí doručovací adresa (Ulice, ČP, Město, PSČ) *", height=70).strip()
+                
+                btn_pridat = st.form_submit_button("💾 Uložit nového partnera")
                 if btn_pridat:
                     if not n_pin or not n_nazev:
-                        st.warning("⚠️ Vyplňte prosím PIN i název partnera.")
+                        st.warning("⚠️ Vyplňte prosím alespoň PIN a název partnera.")
                     else:
                         existujici_piny = [str(p["PIN"]) for p in partneri_seznam]
                         if n_pin in existujici_piny:
                             st.error("❌ Tento PIN už používá jiný partner. Zvolte jiný.")
                         else:
-                            partneri_seznam.append({"PIN": n_pin, "Nazev": n_nazev, "Sleva": int(n_sleva)})
+                            novy_p = {
+                                "PIN": n_pin,
+                                "Nazev": n_nazev,
+                                "Firma_ICO": n_firma if n_firma else n_nazev,
+                                "Jmeno": n_jmeno,
+                                "Telefon": n_telefon,
+                                "Email": n_email,
+                                "Adresa": n_adresa,
+                                "Sleva": int(n_sleva)
+                            }
+                            partneri_seznam.append(novy_p)
                             if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
-                                st.success(f"✅ Partner **{n_nazev}** byl úspěšně přidán!")
+                                st.success(f"✅ Partner **{n_nazev}** byl úspěšně kompletně založen!")
                                 st.rerun()
                             else:
                                 st.error("❌ Chyba při ukládání.")
 
             st.divider()
-            st.markdown("### 👥 Seznam aktivních odběratelů a slev")
+            st.markdown("### 👥 Seznam aktivních velkoodběratelů")
             
             partneri_ke_smazani = []
             for i, p in enumerate(partneri_seznam):
-                col1, col2, col3, col4 = st.columns([2, 3, 2, 1.2])
-                col1.write(f"🔑 **PIN:** `{p['PIN']}`")
-                col2.write(f"🏪 **Partner:** {p['Nazev']}")
-                col3.write(f"🏷️ **Sleva:** {p['Sleva']} %")
-                if col4.button("🗑️ Smazat", key=f"del_partner_{i}"):
-                    partneri_ke_smazani.append(i)
+                p_pin = p["PIN"]
+                p_nazev = p.get("Nazev", "Partner")
+                p_sleva = p.get("Sleva", 40)
+                p_firma = p.get("Firma_ICO", "-")
+                p_kontakt = p.get("Jmeno", "-")
+                p_tel = p.get("Telefon", "-")
+                p_mail = p.get("Email", "-")
+                p_adr = p.get("Adresa", "-")
+                
+                with st.expander(f"🏪 {p_nazev} — Sleva {p_sleva} % (PIN: {p_pin})"):
+                    c_info1, c_info2 = st.columns(2)
+                    with c_info1:
+                        st.markdown(f"**🔑 PIN:** `{p_pin}`")
+                        st.markdown(f"**🏢 Firma / IČO:** {p_firma}")
+                        st.markdown(f"**👤 Kontakt:** {p_kontakt}")
+                    with c_info2:
+                        st.markdown(f"**📞 Telefon:** {p_tel}")
+                        st.markdown(f"**✉️ E-mail:** {p_mail}")
+                        st.markdown(f"**📍 Adresa:** {p_adr}")
+                        
+                    st.caption(f"🔗 **Přímý odkaz pro partnera k odeslání:** `?pin={p_pin}`")
+                    
+                    if st.button("🗑️ Smazat tohoto partnera", key=f"del_partner_{i}"):
+                        partneri_ke_smazani.append(i)
                     
             if partneri_ke_smazani:
                 for idx in sorted(partneri_ke_smazani, reverse=True):
