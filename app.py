@@ -18,8 +18,11 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 FILE_PATH = "objednavky_deni_b2b.csv"
 SETTINGS_PATH = "nastaveni_deni.json"
 LOGO_PATH = "logo.jpg"
-BANK_ACCOUNT = "123456789"  # Doplňte skutečné číslo účtu Deni Candle
-BANK_CODE = "0800"       # Doplňte kód banky
+
+# --- BANKOVNÍ ÚDAJE DENI CANDLE ---
+BANK_ACCOUNT = "4078292013"
+BANK_CODE = "0800"
+BANK_IBAN = "CZ5808000000004078292013"
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
 GITHUB_REPO = st.secrets.get("GITHUB_REPO", "")
@@ -420,6 +423,7 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
         .header {{ text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }}
         .header h1 {{ color: #8C5A47; margin: 0; }}
         .total {{ background: #F4EBE6; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; color: #8C5A47; margin-top: 20px; border-radius: 6px; }}
+        .payment {{ background: #fff8e1; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-top: 20px; font-size: 14px; }}
     </style>
     </head>
     <body>
@@ -434,6 +438,15 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
             <p>{polozky_str}</p>
             <p><strong>Doprava:</strong> {doprava_nazev} ({cena_dopravy:,.0f} Kč)</p>
             <div class="total">Celková cena k úhradě: {cena_celkem:,.0f} Kč</div>
+            
+            <div class="payment">
+                <strong>💳 Pokyny k platbě převodem:</strong><br><br>
+                Číslo účtu: <strong>{BANK_ACCOUNT}/{BANK_CODE}</strong><br>
+                IBAN: <strong>{BANK_IBAN}</strong><br>
+                Variabilní symbol: <strong>{id_obj}</strong><br>
+                Částka: <strong>{cena_celkem:,.0f} Kč</strong>
+            </div>
+            
             <p style="margin-top:20px; font-size:12px; color:#666; text-align:center;">Děkujeme za váš odběr rukodělných svíček Deni Candle.</p>
         </div>
     </body>
@@ -480,6 +493,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 key="btn_download_b2b_ok"
             )
             st.write(f"**Číslo účtu:** {BANK_ACCOUNT}/{BANK_CODE}")
+            st.write(f"**IBAN:** {BANK_IBAN}")
             st.write(f"**Částka k úhradě:** {p['cena']:,.0f} Kč")
             st.write(f"**Variabilní symbol:** {p['id']}")
             st.write(f"**Zpráva pro příjemce:** DeniCandle B2B {p['id']}")
@@ -627,7 +641,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                                 
                                 html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text_email.replace("\n", "<br>"), celkem_ks, celkova_cena_zbozi_vo, zvolena_doprava_nazev, cena_dopravy, celkova_konecna_cena, aktualni_sleva)
                                 
-                                spd_str = f"SPD*1.0*ACC:{BANK_ACCOUNT}/{BANK_CODE}*AM:{celkova_konecna_cena:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
+                                spd_str = f"SPD*1.0*ACC:{BANK_IBAN}*AM:{celkova_konecna_cena:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
                                 qr_img = qrcode.make(spd_str)
                                 buf = BytesIO()
                                 qr_img.save(buf, format="PNG")
