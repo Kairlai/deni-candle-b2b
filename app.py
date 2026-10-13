@@ -238,32 +238,56 @@ st.markdown("""
 def get_headers():
     return {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
 
-def odeslat_email_upozorneni(id_obj, firma, cena, doprava_nazev, celkem_ks, polozky_text):
-    if not EMAIL_SENDER or not EMAIL_PASSWORD or not EMAIL_RECEIVER:
+# --- ODESÍLÁNÍ POTVRZENÍ PARTNEROVI I MAJITELI ---
+def odeslat_email_upozorneni(id_obj, firma, jmeno, email_partnera, telefon, adresa, cena, doprava_nazev, celkem_ks, polozky_text):
+    if not EMAIL_SENDER or not EMAIL_PASSWORD:
         return False
     try:
         msg = MIMEMultipart()
-        msg['From'] = EMAIL_SENDER
-        msg['To'] = EMAIL_RECEIVER
-        msg['Subject'] = f"🕯️ Nová B2B objednávka #{id_obj} od {firma}"
+        msg['From'] = f"Deni Candle <{EMAIL_SENDER}>"
+        
+        # Odesílá se přímo odběrateli, kopie jde majiteli
+        if email_partnera:
+            msg['To'] = email_partnera
+            if EMAIL_RECEIVER and EMAIL_RECEIVER.strip().lower() != email_partnera.strip().lower():
+                msg['Cc'] = EMAIL_RECEIVER
+        else:
+            msg['To'] = EMAIL_RECEIVER
+
+        msg['Subject'] = f"🕯️ Potvrzení B2B objednávky #{id_obj} — Deni Candle"
         
         body = f"""Dobrý den,
 
-přes B2B portál Deni Candle byla právě přijata nová objednávka!
+děkujeme za Vaši velkoobchodní objednávku v portálu Deni Candle.
 
-🛍️ Objednávka #{id_obj}
-🏢 Partner: {firma}
-🚚 Doprava: {doprava_nazev}
-💰 Celková cena (VO): {cena:,.0f} Kč
-📦 Celkem kusů: {celkem_ks} ks
+📋 SHRNUTÍ OBJEDNÁVKY #{id_obj}
+----------------------------------------
+Firma / IČO: {firma}
+Kontaktní osoba: {jmeno} ({telefon})
+Doručovací adresa: {adresa}
+Způsob dopravy: {doprava_nazev}
+Celkem produktů: {celkem_ks} ks
 
-Přehled položek:
+PŘEHLED POLOŽEK:
 {polozky_text}
 
-Objednávku si můžete detailně prohlédnout v administraci aplikace.
+----------------------------------------
+CELKOVÁ ČÁSTKA K ÚHRADĚ: {cena:,.0f} Kč
+----------------------------------------
 
-Hezký den,
-Váš B2B systém Deni Candle
+💳 POKYNY K PLATBĚ PŘEVODEM:
+Číslo účtu: {BANK_ACCOUNT}/{BANK_CODE}
+IBAN: {BANK_IBAN}
+Variabilní symbol: {id_obj}
+Částka: {cena:,.0f} Kč
+Zpráva pro příjemce: DeniCandle B2B {id_obj}
+
+Jakmile platbu přijmeme, pustíme se do odlévání a přípravy Vašeho balíku.
+
+V případě jakýchkoli dotazů se na nás neváhejte obrátit.
+
+S přáním krásného dne,
+Deni Candle
 """
         msg.attach(MIMEText(body, 'plain', 'utf-8'))
         
@@ -478,7 +502,6 @@ rezim = st.sidebar.radio("Navigace:", ["🛍️ Velkoobchodní objednávka", "�
 # 1. B2B OBJEDNÁVKOVÝ PORTÁL PRO PARTNERY
 # ---------------------------------------------------------
 if rezim == "🛍️ Velkoobchodní objednávka":
-    # Automatické promazání košíku po odeslání
     if st.session_state.get("need_clear_b2b_form", False):
         for idx in range(len(PRODUKTY_KATALOG)):
             st.session_state[f"vo_{idx}"] = 0
@@ -486,11 +509,10 @@ if rezim == "🛍️ Velkoobchodní objednávka":
 
     st.markdown("<h1>🕯️ Velkoobchodní portál Deni Candle</h1>", unsafe_allow_html=True)
     
-    # Potvrzení odeslané objednávky nahoře
     if "potvrzeni_b2b" in st.session_state:
         p = st.session_state["potvrzeni_b2b"]
         st.balloons()
-        st.success(f"🎉 Objednávka #{p['id']} byla úspěšně odeslána a uložena do systému!")
+        st.success(f"🎉 Objednávka #{p['id']} byla úspěšně odeslána! Potvrzení s platebními údaji bylo odesláno na Váš e-mail.")
         
         col_c1, col_c2 = st.columns([1.2, 1])
         with col_c1:
@@ -575,7 +597,6 @@ if rezim == "🛍️ Velkoobchodní objednávka":
             with col_kosik:
                 st.subheader("2. Údaje & Způsob dopravy")
                 
-                # AUTOMATICKÉ PŘEDVYPLNĚNÍ Z PROFILU ODBĚRATELE
                 vychozi_firma = aktivni_partner.get("Firma_ICO") or aktivni_partner.get("Nazev", "")
                 vychozi_jmeno = aktivni_partner.get("Jmeno", "")
                 vychozi_telefon = aktivni_partner.get("Telefon", "")
@@ -586,7 +607,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 jmeno = st.text_input("Jméno kontaktní osoby *", value=vychozi_jmeno).strip()
                 col_t, col_e = st.columns(2)
                 telefon = col_t.text_input("Telefon *", value=vychozi_telefon).strip()
-                email = col_e.text_input("E-mail *", value=vychozi_email).strip()
+                email = col_e.text_input("E-mail * (pro potvrzení objednávky)", value=vychozi_email).strip()
                 adresa = st.text_area("Doručovací adresa (Ulice, ČP, Město, PSČ) *", value=vychozi_adresa, height=80).strip()
                 
                 st.markdown("**🚚 Výběr dopravy:**")
@@ -628,329 +649,4 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                         with st.spinner('Odesílám VO objednávku... 🕯️'):
                             nove_id = 1 if df_orders.empty else int(df_orders["ID"].max()) + 1
                             polozky_text_email = ",\n".join(vybrane_polozky)
-                            polozky_text_db = ", ".join(vybrane_polozky)
-                            
-                            nova_obj = pd.DataFrame([{
-                                "ID": nove_id,
-                                "Datum_Vytvoreni": datetime.now().strftime("%Y-%m-%d %H:%M"),
-                                "Oznaceni_Partnera": nazev_partnera,
-                                "Firma_ICO": firma,
-                                "Jmeno_Kontakt": jmeno,
-                                "Telefon": telefon,
-                                "Email": email,
-                                "Adresa_Doruceni": adresa,
-                                "Poznamka": poznamka,
-                                "Polozky_Detail": polozky_text_db,
-                                "Celkem_Ks": celkem_ks,
-                                "Sleva_Pouzita": f"{aktualni_sleva} %",
-                                "Cena_Zbozi_VO": celkova_cena_zbozi_vo,
-                                "Doprava_Nazev": zvolena_doprava_nazev,
-                                "Cena_Dopravy": cena_dopravy,
-                                "Cena_Celkem_VO": celkova_konecna_cena,
-                                "Stav_Platby": "Čeká na platbu",
-                                "Stav_Vyroby": "K výrobě"
-                            }])
-                            
-                            df_aktualni = pd.concat([df_orders, nova_obj], ignore_index=True)
-                            if uloz_objednavky(df_aktualni, current_sha):
-                                odeslat_email_upozorneni(nove_id, firma, celkova_konecna_cena, zvolena_doprava_nazev, celkem_ks, polozky_text_email)
-                                
-                                html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text_email.replace("\n", "<br>"), celkem_ks, celkova_cena_zbozi_vo, zvolena_doprava_nazev, cena_dopravy, celkova_konecna_cena, aktualni_sleva)
-                                
-                                spd_str = f"SPD*1.0*ACC:{BANK_IBAN}*AM:{celkova_konecna_cena:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
-                                qr_img = qrcode.make(spd_str)
-                                buf = BytesIO()
-                                qr_img.save(buf, format="PNG")
-                                
-                                st.session_state["potvrzeni_b2b"] = {
-                                    "id": nove_id,
-                                    "html_uct": html_uct,
-                                    "qr_bytes": buf.getvalue(),
-                                    "cena": celkova_konecna_cena
-                                }
-                                st.session_state["need_clear_b2b_form"] = True
-                                st.rerun()
-                            else:
-                                st.error("❌ Chyba při ukládání objednávky.")
-                                
-        with tab_p2:
-            st.markdown(f"### 📜 Minulé objednávky partnera **{nazev_partnera}**")
-            moje_objednavky = df_orders[df_orders['Oznaceni_Partnera'] == nazev_partnera].sort_values(by="ID", ascending=False) if not df_orders.empty else pd.DataFrame()
-            
-            if not moje_objednavky.empty:
-                for idx, row in moje_objednavky.iterrows():
-                    id_o = row['ID']
-                    dat_o = row['Datum_Vytvoreni']
-                    cena_o = row['Cena_Celkem_VO']
-                    ks_o = row['Celkem_Ks']
-                    detail_o = str(row['Polozky_Detail'])
-                    
-                    with st.expander(f"📦 Objednávka #{id_o} — {cena_o:,.0f} Kč ({dat_o})"):
-                        st.write(f"**Položky ({ks_o} ks):** {detail_o}")
-                        st.write(f"**Doprava:** {row.get('Doprava_Nazev', '-')} | **Stav:** {row.get('Stav_Vyroby', 'K výrobě')}")
-                        
-                        if st.button(f"🔄 Zopakovat objednávku #{id_o}", key=f"repeat_{id_o}"):
-                            for i_p, prod in enumerate(PRODUKTY_KATALOG):
-                                st.session_state[f"vo_{i_p}"] = 0
-                                for item in detail_o.split(", "):
-                                    if "x " in item:
-                                        k_str, n_str = item.split("x ", 1)
-                                        if n_str.strip() == prod["nazev"].strip():
-                                            st.session_state[f"vo_{i_p}"] = int(k_str)
-                            st.success(f"Položky z objednávky #{id_o} byly načteny do košíku! Přepněte se na záložku 'Nová objednávka'.")
-                            st.rerun()
-            else:
-                st.info("Zatím jste nevytvořili žádné objednávky.")
-
-    elif zadan_pin:
-        st.error("❌ Neplatný B2B PIN. Zkontrolujte prosím přístupové heslo.")
-
-# ---------------------------------------------------------
-# 2. SPRÁVA PRO MAJITELE DENI CANDLE
-# ---------------------------------------------------------
-else:
-    st.markdown("<h1 class='main-header'>🔐 Správa Deni Candle</h1>", unsafe_allow_html=True)
-    heslo_admin = st.text_input("Heslo správce:", type="password")
-    
-    if heslo_admin == ADMIN_PASSWORD:
-        st.success("✅ Přístup schválen.")
-        
-        tab_db, tab_vyroba, tab_partneri = st.tabs(["📋 Databáze objednávek", "🕯️ Souhrn pro výrobu", "👥 Správa odběratelů a slev"])
-        
-        with tab_db:
-            if not df_orders.empty:
-                st.markdown("### 📋 Přehled přijatých objednávek")
-                
-                excel_db = vytvor_profi_excel(df_orders, titulek="Databaze_Objednavek")
-                st.download_button(
-                    label="📥 Stáhnout kompletní databázi do Excelu", 
-                    data=excel_db, 
-                    file_name=f"DeniCandle_Databaze_{datetime.now().strftime('%d_%m_%Y')}.xlsx", 
-                    mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                    key="dl_db_all"
-                )
-                
-                st.divider()
-                
-                df_orders_sorted = df_orders.sort_values(by="ID", ascending=False)
-                
-                for idx, row in df_orders_sorted.iterrows():
-                    id_obj = row['ID']
-                    datum = row['Datum_Vytvoreni']
-                    partner = row['Oznaceni_Partnera']
-                    cena = row['Cena_Celkem_VO']
-                    stav_v = row.get('Stav_Vyroby', 'K výrobě')
-                    
-                    ikona_stavu = "🔥" if stav_v == "K výrobě" else "✅"
-                    
-                    with st.expander(f"{ikona_stavu} Objednávka #{id_obj} — {partner} | {cena:,.0f} Kč | {datum} ({stav_v})"):
-                        c1, c2 = st.columns(2)
-                        
-                        with c1:
-                            st.markdown(f"**🏢 Odběratel:** {row['Firma_ICO']}")
-                            st.markdown(f"**👤 Kontakt:** {row['Jmeno_Kontakt']}")
-                            st.markdown(f"**📞 Telefon:** {row['Telefon']}")
-                            st.markdown(f"**✉️ E-mail:** {row['Email']}")
-                            st.markdown(f"**📍 Adresa:** {row['Adresa_Doruceni']}")
-                            
-                        with c2:
-                            st.markdown(f"**🏷️ Použitá sleva:** {row['Sleva_Pouzita']}")
-                            st.markdown(f"**🚚 Doprava:** {row.get('Doprava_Nazev', '-')} ({row.get('Cena_Dopravy', 0)} Kč)")
-                            st.markdown(f"**💰 Celková cena (VO):** {cena:,.0f} Kč")
-                            st.markdown(f"**📦 Celkem kusů:** {row['Celkem_Ks']} ks")
-                            st.markdown(f"**📌 Stav zakázky:** `{stav_v}`")
-                            
-                            poznamka = row['Poznamka']
-                            if pd.notna(poznamka) and str(poznamka).strip() != "":
-                                st.markdown(f"**📝 Poznámka:** {poznamka}")
-                        
-                        st.markdown("**🛍️ Objednané položky:**")
-                        st.info(row['Polozky_Detail'])
-                        
-                        col_b1, col_b2 = st.columns(2)
-                        if stav_v == "K výrobě":
-                            if col_b1.button(f"✅ Označit #{id_obj} jako vyřízenou/odlitou", key=f"done_db_{id_obj}"):
-                                df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'Vyřízeno'
-                                uloz_objednavky(df_orders, current_sha)
-                                st.success("✅ Změněno na Vyřízeno.")
-                                st.rerun()
-                        else:
-                            if col_b1.button(f"🔄 Vrátit #{id_obj} zpět k výrobě", key=f"reopen_db_{id_obj}"):
-                                df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'K výrobě'
-                                uloz_objednavky(df_orders, current_sha)
-                                st.rerun()
-                                
-                        if col_b2.button(f"🗑️ Smazat objednávku #{id_obj}", key=f"del_db_{id_obj}"):
-                            df_orders = df_orders[df_orders['ID'] != id_obj]
-                            uloz_objednavky(df_orders, current_sha)
-                            st.success("🗑️ Objednávka smazána.")
-                            st.rerun()
-            else:
-                st.info("Zatím žádné B2B objednávky.")
-                
-        with tab_vyroba:
-            df_k_vyrobe = df_orders[df_orders.get('Stav_Vyroby', 'K výrobě') == 'K výrobě'] if not df_orders.empty else pd.DataFrame()
-            
-            if not df_k_vyrobe.empty:
-                st.markdown("### 📊 Výrobní matice (Pouze nezpracované zakázky)")
-                
-                matrix_rows = []
-                for idx, row in df_k_vyrobe.iterrows():
-                    id_obj = row['ID']
-                    partner = row['Oznaceni_Partnera']
-                    col_label = f"Obj #{id_obj} ({partner})"
-                    
-                    detail = row["Polozky_Detail"]
-                    if pd.notna(detail):
-                        for item in str(detail).split(", "):
-                            if "x " in item:
-                                ks, název = item.split("x ", 1)
-                                matrix_rows.append({"Produkt": název, "Col": col_label, "Ks": int(ks)})
-                
-                if matrix_rows:
-                    df_matrix_raw = pd.DataFrame(matrix_rows)
-                    df_pivot = df_matrix_raw.pivot_table(index="Produkt", columns="Col", values="Ks", aggfunc="sum", fill_value=0)
-                    
-                    df_pivot["CELKEM KS"] = df_pivot.sum(axis=1)
-                    df_pivot = df_pivot.sort_values(by="CELKEM KS", ascending=False).reset_index()
-                    
-                    df_pivot_display = df_pivot.copy()
-                    for col in df_pivot_display.columns:
-                        if col not in ["Produkt", "CELKEM KS"]:
-                            df_pivot_display[col] = df_pivot_display[col].apply(lambda x: f"{x} ks" if x > 0 else "-")
-                        elif col == "CELKEM KS":
-                            df_pivot_display[col] = df_pivot_display[col].apply(lambda x: f"🔥 {x} ks")
-
-                    st.table(df_pivot_display)
-                    
-                    excel_data = vytvor_profi_excel(df_pivot, titulek="Vyrobni_Matice")
-                    st.download_button(
-                        label="📥 Stáhnout výrobní matici do Excelu", 
-                        data=excel_data, 
-                        file_name=f"DeniCandle_VyrobniMatice_{datetime.now().strftime('%d_%m')}.xlsx", 
-                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        key="dl_all_vyroba_matrix"
-                    )
-                else:
-                    st.info("Žádné svíčky k výrobě.")
-                
-                st.divider()
-                
-                st.markdown("### 📦 Samostatné rozpisky k odlítí")
-                df_k_vyrobe_sorted = df_k_vyrobe.sort_values(by="ID", ascending=False)
-                
-                for idx, row in df_k_vyrobe_sorted.iterrows():
-                    id_obj = row['ID']
-                    partner = row['Oznaceni_Partnera']
-                    datum = row['Datum_Vytvoreni']
-                    
-                    with st.expander(f"Rozpiska pro Objednávku #{id_obj} — {partner} ({datum})"):
-                        polozky_obj = []
-                        detail = row["Polozky_Detail"]
-                        if pd.notna(detail):
-                            for item in str(detail).split(", "):
-                                if "x " in item:
-                                    ks, název = item.split("x ", 1)
-                                    polozky_obj.append({"Produkt": název, "Ks": int(ks)})
-                        
-                        if polozky_obj:
-                            df_obj = pd.DataFrame(polozky_obj).groupby("Produkt").sum().reset_index()
-                            st.table(df_obj)
-                            
-                            c_m1, c_m2 = st.columns(2)
-                            excel_obj = vytvor_profi_excel(df_obj, titulek=f"Objednavka_{id_obj}")
-                            c_m1.download_button(
-                                label=f"📥 Excel pro objednávku #{id_obj}", 
-                                data=excel_obj, 
-                                file_name=f"DeniCandle_Vyroba_Obj_{id_obj}.xlsx", 
-                                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                key=f"dl_obj_{id_obj}"
-                            )
-                            
-                            if c_m2.button(f"✅ Hotovo / Odlito (Vyřídit #{id_obj})", key=f"done_vyroba_{id_obj}"):
-                                df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'Vyřízeno'
-                                uloz_objednavky(df_orders, current_sha)
-                                st.rerun()
-            else:
-                st.success("🎉 Skvělé! Všechny svíčky jsou odlité a žádné objednávky nečekají na výrobu.")
-                
-        with tab_partneri:
-            st.markdown("### ➕ Založit nového velkoodběratele (Kompletní profil)")
-            with st.form("form_novy_partner", clear_on_submit=True):
-                col_p1, col_p2, col_p3 = st.columns([1.5, 2.5, 1])
-                n_pin = col_p1.text_input("Přístupový PIN (heslo partnera) *").strip()
-                n_nazev = col_p2.text_input("Zkrácený název partnera (např. Květiny Rosa) *").strip()
-                n_sleva = col_p3.number_input("Sleva v %", min_value=0, max_value=99, value=40)
-                
-                col_f1, col_f2 = st.columns(2)
-                n_firma = col_f1.text_input("Firma / Obchod & IČO * (pro fakturaci)").strip()
-                n_jmeno = col_f2.text_input("Jméno kontaktní osoby *").strip()
-                
-                col_c1, col_c2 = st.columns(2)
-                n_telefon = col_c1.text_input("Telefon *").strip()
-                n_email = col_c2.text_input("E-mail *").strip()
-                
-                n_adresa = st.text_area("Výchozí doručovací adresa (Ulice, ČP, Město, PSČ) *", height=70).strip()
-                
-                btn_pridat = st.form_submit_button("💾 Uložit nového partnera")
-                if btn_pridat:
-                    if not n_pin or not n_nazev:
-                        st.warning("⚠️ Vyplňte prosím alespoň PIN a název partnera.")
-                    else:
-                        existujici_piny = [str(p["PIN"]) for p in partneri_seznam]
-                        if n_pin in existujici_piny:
-                            st.error("❌ Tento PIN už používá jiný partner. Zvolte jiný.")
-                        else:
-                            novy_p = {
-                                "PIN": n_pin,
-                                "Nazev": n_nazev,
-                                "Firma_ICO": n_firma if n_firma else n_nazev,
-                                "Jmeno": n_jmeno,
-                                "Telefon": n_telefon,
-                                "Email": n_email,
-                                "Adresa": n_adresa,
-                                "Sleva": int(n_sleva)
-                            }
-                            partneri_seznam.append(novy_p)
-                            if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
-                                st.success(f"✅ Partner **{n_nazev}** byl úspěšně kompletně založen!")
-                                st.rerun()
-                            else:
-                                st.error("❌ Chyba při ukládání.")
-
-            st.divider()
-            st.markdown("### 👥 Seznam aktivních velkoodběratelů")
-            
-            partneri_ke_smazani = []
-            for i, p in enumerate(partneri_seznam):
-                p_pin = p["PIN"]
-                p_nazev = p.get("Nazev", "Partner")
-                p_sleva = p.get("Sleva", 40)
-                p_firma = p.get("Firma_ICO", "-")
-                p_kontakt = p.get("Jmeno", "-")
-                p_tel = p.get("Telefon", "-")
-                p_mail = p.get("Email", "-")
-                p_adr = p.get("Adresa", "-")
-                
-                with st.expander(f"🏪 {p_nazev} — Sleva {p_sleva} % (PIN: {p_pin})"):
-                    c_info1, c_info2 = st.columns(2)
-                    with c_info1:
-                        st.markdown(f"**🔑 PIN:** `{p_pin}`")
-                        st.markdown(f"**🏢 Firma / IČO:** {p_firma}")
-                        st.markdown(f"**👤 Kontakt:** {p_kontakt}")
-                    with c_info2:
-                        st.markdown(f"**📞 Telefon:** {p_tel}")
-                        st.markdown(f"**✉️ E-mail:** {p_mail}")
-                        st.markdown(f"**📍 Adresa:** {p_adr}")
-                        
-                    st.caption(f"🔗 **Přímý odkaz pro partnera k odeslání:** `?pin={p_pin}`")
-                    
-                    if st.button("🗑️ Smazat tohoto partnera", key=f"del_partner_{i}"):
-                        partneri_ke_smazani.append(i)
-                    
-            if partneri_ke_smazani:
-                for idx in sorted(partneri_ke_smazani, reverse=True):
-                    partneri_seznam.pop(idx)
-                if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
-                    st.success("✅ Partner byl smazán.")
-                    st.rerun()
+                            polozky_text_db = ", ".join(vybrane_pol
