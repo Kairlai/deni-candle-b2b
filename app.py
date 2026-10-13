@@ -18,7 +18,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 FILE_PATH = "objednavky_deni_b2b.csv"
 SETTINGS_PATH = "nastaveni_deni.json"
 LOGO_PATH = "logo.jpg"
-BANK_ACCOUNT = "123456789"  # Doplňte číslo účtu Deni Candle
+BANK_ACCOUNT = "123456789"  # Doplňte skutečné číslo účtu Deni Candle
 BANK_CODE = "0800"       # Doplňte kód banky
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
@@ -39,67 +39,67 @@ DOPRAVA_MOZNOSTI = {
 }
 DOPRAVA_ZDARMA_OD = 5000
 
-# Kompletní katalog produktů (50 položek dle e-shopu deni-candle.cz k 13. 10. 2026)
+# Kompletní katalog 50 produktů rozdělených do kolekcí
 PRODUKTY_KATALOG = [
     # Vánoční kolekce
-    {"nazev": "🎄 Šťastné a veselé – stromeček", "cena_mo": 409.0, "foto": ""},
-    {"nazev": "✨ Krásné prožití vánočních svátků (velká)", "cena_mo": 409.0, "foto": ""},
-    {"nazev": "🌟 Kouzelné Vánoce", "cena_mo": 409.0, "foto": ""},
-    {"nazev": "☕ Pohodové Vánoce", "cena_mo": 299.0, "foto": ""},
-    {"nazev": "🎁 Veselé vánoce – dáreček", "cena_mo": 299.0, "foto": ""},
-    {"nazev": "🕯️ Krásné a klidné Vánoce", "cena_mo": 299.0, "foto": ""},
-    {"nazev": "⭐ Vánoční hvězda – červená", "cena_mo": 299.0, "foto": ""},
-    {"nazev": "❄️ Krásné Vánoce – vločka", "cena_mo": 399.0, "foto": ""},
-    {"nazev": "✨ Krásné prožití vánočních svátků", "cena_mo": 399.0, "foto": ""},
-    {"nazev": "❄️ Veselé Vánoce – vločka", "cena_mo": 399.0, "foto": ""},
-    {"nazev": "🍪 Perníček", "cena_mo": 399.0, "foto": ""},
-    {"nazev": "🏠 Perníková chaloupka", "cena_mo": 399.0, "foto": ""},
+    {"nazev": "🎄 Šťastné a veselé – stromeček", "cena_mo": 409.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "✨ Krásné prožití vánočních svátků (velká)", "cena_mo": 409.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "🌟 Kouzelné Vánoce", "cena_mo": 409.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "☕ Pohodové Vánoce", "cena_mo": 299.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "🎁 Veselé vánoce – dáreček", "cena_mo": 299.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "🕯️ Krásné a klidné Vánoce", "cena_mo": 299.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "⭐ Vánoční hvězda – červená", "cena_mo": 299.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "❄️ Krásné Vánoce – vločka", "cena_mo": 399.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "✨ Krásné prožití vánočních svátků", "cena_mo": 399.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "❄️ Veselé Vánoce – vločka", "cena_mo": 399.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "🍪 Perníček", "cena_mo": 399.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
+    {"nazev": "🏠 Perníková chaloupka", "cena_mo": 399.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
 
     # Podzim & Halloween
-    {"nazev": "🦔 Ježkův podzim", "cena_mo": 359.0, "foto": ""},
-    {"nazev": "🎃 Halloween", "cena_mo": 359.0, "foto": ""},
-    {"nazev": "🎃 Dýňulka", "cena_mo": 269.0, "foto": "dynulka.jpg"},
-    {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0, "foto": "oblacek.jpg"},
-    {"nazev": "🎃 Dýňový okamžik", "cena_mo": 359.0, "foto": ""},
-    {"nazev": "🍂 Dýňový podzim", "cena_mo": 359.0, "foto": ""},
-    {"nazev": "⛄ Dýňulka sněhulka", "cena_mo": 269.0, "foto": ""},
+    {"nazev": "🦔 Ježkův podzim", "cena_mo": 359.0, "foto": "", "kategorie": "🎃 Podzim & Halloween"},
+    {"nazev": "🎃 Halloween", "cena_mo": 359.0, "foto": "", "kategorie": "🎃 Podzim & Halloween"},
+    {"nazev": "🎃 Dýňulka", "cena_mo": 269.0, "foto": "dynulka.jpg", "kategorie": "🎃 Podzim & Halloween"},
+    {"nazev": "☁️ Podzimní obláček", "cena_mo": 359.0, "foto": "oblacek.jpg", "kategorie": "🎃 Podzim & Halloween"},
+    {"nazev": "🎃 Dýňový okamžik", "cena_mo": 359.0, "foto": "", "kategorie": "🎃 Podzim & Halloween"},
+    {"nazev": "🍂 Dýňový podzim", "cena_mo": 359.0, "foto": "", "kategorie": "🎃 Podzim & Halloween"},
+    {"nazev": "⛄ Dýňulka sněhulka", "cena_mo": 269.0, "foto": "", "kategorie": "🎃 Podzim & Halloween"},
 
-    # Motivační / Dárkové skleničky
-    {"nazev": "🍋 Citronová pomsta (citronela)", "cena_mo": 259.9, "foto": ""},
-    {"nazev": "❤️ Děkuji!", "cena_mo": 259.0, "foto": ""},
-    {"nazev": "🌸 Chvíle pro tebe", "cena_mo": 259.0, "foto": ""},
-    {"nazev": "🌺 Svítím pro tebe", "cena_mo": 259.0, "foto": ""},
-    {"nazev": "🤍 Pro radost…", "cena_mo": 259.0, "foto": ""},
-    {"nazev": "🕯️ Rozsviť si den", "cena_mo": 259.0, "foto": ""},
-    {"nazev": "✨ Jen tak…", "cena_mo": 259.0, "foto": ""},
-    {"nazev": "🌙 Vypni svět, zapal svíčku", "cena_mo": 259.0, "foto": ""},
+    # Květinové & Elegantní
+    {"nazev": "🌿 Zahrada snů", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌸 Pivoňkové objetí", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌹 Sametový květ – růžový", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "💜 Sametový květ – fialový", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌼 Nebeská kopretina", "cena_mo": 249.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "💜 Nebe na dlani", "cena_mo": 249.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "👑 Královská perla – Perleť", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌸 Královská perla – růžová", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🟡 Královská perla – Zlatá", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🪷 Lotosový květ – růžový", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🪷 Lotosový květ – fialový", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "💜 Pastelová elegance – frézie", "cena_mo": 249.9, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌷 Pastelová elegance – tulipány", "cena_mo": 249.9, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "💜 Jarní pohlazení", "cena_mo": 249.9, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌼 Barevná zahrádka", "cena_mo": 349.0, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "💜 Fialový květ", "cena_mo": 249.9, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌹 Růžový květ", "cena_mo": 249.9, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
+    {"nazev": "🌼 Žlutý květ", "cena_mo": 249.9, "foto": "", "kategorie": "🌸 Květinové & Elegantní"},
 
-    # Květinové & Elegantní svíčky
-    {"nazev": "🌿 Zahrada snů", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🌸 Pivoňkové objetí", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🌹 Sametový květ – růžový", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "💜 Sametový květ – fialový", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🌼 Nebeská kopretina", "cena_mo": 249.0, "foto": ""},
-    {"nazev": "💜 Nebe na dlani", "cena_mo": 249.0, "foto": ""},
-    {"nazev": "👑 Královská perla – Perleť", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🌸 Královská perla – růžová", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🟡 Královská perla – Zlatá", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🪷 Lotosový květ – růžový", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "🪷 Lotosový květ – fialový", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "💜 Pastelová elegance – frézie", "cena_mo": 249.9, "foto": ""},
-    {"nazev": "🌷 Pastelová elegance – tulipány", "cena_mo": 249.9, "foto": ""},
-    {"nazev": "💜 Jarní pohlazení", "cena_mo": 249.9, "foto": ""},
-    {"nazev": "🌼 Barevná zahrádka", "cena_mo": 349.0, "foto": ""},
-    {"nazev": "💜 Fialový květ", "cena_mo": 249.9, "foto": ""},
-    {"nazev": "🌹 Růžový květ", "cena_mo": 249.9, "foto": ""},
-    {"nazev": "🌼 Žlutý květ", "cena_mo": 249.9, "foto": ""},
+    # Dárkové & Motivační
+    {"nazev": "🍋 Citronová pomsta (citronela)", "cena_mo": 259.9, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "❤️ Děkuji!", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "🌸 Chvíle pro tebe", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "🌺 Svítím pro tebe", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "🤍 Pro radost…", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "🕯️ Rozsviť si den", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "✨ Jen tak…", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
+    {"nazev": "🌙 Vypni svět, zapal svíčku", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
 
-    # Láska, zvířátka a Velikonoce
-    {"nazev": "💖 Srdíčko z lásky – velké", "cena_mo": 299.9, "foto": ""},
-    {"nazev": "❤️ Srdíčko z lásky", "cena_mo": 249.9, "foto": ""},
-    {"nazev": "🧸 Medvídek z lásky", "cena_mo": 299.9, "foto": ""},
-    {"nazev": "🫂 Láskyplné objetí", "cena_mo": 299.9, "foto": ""},
-    {"nazev": "🐰 Velikonoční ušák – fialový", "cena_mo": 299.0, "foto": ""}
+    # Láska & Zvířátka
+    {"nazev": "💖 Srdíčko z lásky – velké", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
+    {"nazev": "❤️ Srdíčko z lásky", "cena_mo": 249.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
+    {"nazev": "🧸 Medvídek z lásky", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
+    {"nazev": "🫂 Láskyplné objetí", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
+    {"nazev": "🐰 Velikonoční ušák – fialový", "cena_mo": 299.0, "foto": "", "kategorie": "💖 Láska & Zvířátka"}
 ]
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
@@ -456,7 +456,42 @@ rezim = st.sidebar.radio("Navigace:", ["🛍️ Velkoobchodní objednávka", "�
 # 1. B2B OBJEDNÁVKOVÝ PORTÁL PRO PARTNERY
 # ---------------------------------------------------------
 if rezim == "🛍️ Velkoobchodní objednávka":
+    # Automatické promazání košíku po odeslání
+    if st.session_state.get("need_clear_b2b_form", False):
+        for idx in range(len(PRODUKTY_KATALOG)):
+            st.session_state[f"vo_{idx}"] = 0
+        st.session_state["need_clear_b2b_form"] = False
+
     st.markdown("<h1>🕯️ Velkoobchodní portál Deni Candle</h1>", unsafe_allow_html=True)
+    
+    # Potvrzení odeslané objednávky nahoře
+    if "potvrzeni_b2b" in st.session_state:
+        p = st.session_state["potvrzeni_b2b"]
+        st.balloons()
+        st.success(f"🎉 Objednávka #{p['id']} byla úspěšně odeslána a uložena do systému!")
+        
+        col_c1, col_c2 = st.columns([1.2, 1])
+        with col_c1:
+            st.download_button(
+                "📥 Stáhnout B2B Potvrzení objednávky", 
+                p["html_uct"], 
+                file_name=f"DeniCandle_B2B_{p['id']}.html", 
+                mime="text/html",
+                key="btn_download_b2b_ok"
+            )
+            st.write(f"**Číslo účtu:** {BANK_ACCOUNT}/{BANK_CODE}")
+            st.write(f"**Částka k úhradě:** {p['cena']:,.0f} Kč")
+            st.write(f"**Variabilní symbol:** {p['id']}")
+            st.write(f"**Zpráva pro příjemce:** DeniCandle B2B {p['id']}")
+            
+            if st.button("❌ Zavřít toto potvrzení", key="btn_close_b2b_confirmation"):
+                del st.session_state["potvrzeni_b2b"]
+                st.rerun()
+                
+        with col_c2:
+            st.image(p["qr_bytes"], caption="Naskenujte v bankovní aplikaci", width=180)
+            
+        st.divider()
     
     url_pin = st.query_params.get("pin", "")
     zadan_pin = st.text_input("Zadejte přístupový B2B PIN partnera:", type="password", value=url_pin)
@@ -479,28 +514,40 @@ if rezim == "🛍️ Velkoobchodní objednávka":
             mo_hodnota_celkem = 0
             
             with col_katalog:
-                st.subheader("1. Výběr svíček a produktů")
-                col_p1, col_p2 = st.columns(2)
+                st.subheader("1. Výběr svíček podle kolekcí")
                 
-                for idx, prod in enumerate(PRODUKTY_KATALOG):
-                    target_col = col_p1 if idx % 2 == 0 else col_p2
-                    cena_mo = prod["cena_mo"]
-                    cena_vo = round(cena_mo * (1 - aktualni_sleva / 100))
-                    
-                    if prod.get("foto") and os.path.exists(prod["foto"]):
-                        target_col.image(prod["foto"], width=100)
-                    
-                    label = f"{prod['nazev']} (VO: {cena_vo} Kč | MO: {cena_mo:.0f} Kč)"
-                    
-                    key_input = f"vo_{idx}"
-                    default_val = st.session_state.get(key_input, 0)
-                    ks = target_col.number_input(label, min_value=0, max_value=500, value=default_val, key=key_input)
-                    
-                    if ks > 0:
-                        vybrane_polozky.append(f"{ks}x {prod['nazev']}")
-                        celkova_cena_zbozi_vo += ks * cena_vo
-                        mo_hodnota_celkem += ks * cena_mo
-                        celkem_ks += ks
+                kategorie_seznam = [
+                    "🎄 Vánoční kolekce",
+                    "🎃 Podzim & Halloween",
+                    "🌸 Květinové & Elegantní",
+                    "🕯️ Dárkové & Motivační",
+                    "💖 Láska & Zvířátka"
+                ]
+                
+                tabs_kategorie = st.tabs(kategorie_seznam)
+                for tab_k, kat_nazev in zip(tabs_kategorie, kategorie_seznam):
+                    with tab_k:
+                        polozky_v_kat = [(idx, prod) for idx, prod in enumerate(PRODUKTY_KATALOG) if prod["kategorie"] == kat_nazev]
+                        col_p1, col_p2 = st.columns(2)
+                        
+                        for i, (idx, prod) in enumerate(polozky_v_kat):
+                            target_col = col_p1 if i % 2 == 0 else col_p2
+                            cena_mo = prod["cena_mo"]
+                            cena_vo = round(cena_mo * (1 - aktualni_sleva / 100))
+                            
+                            if prod.get("foto") and os.path.exists(prod["foto"]):
+                                target_col.image(prod["foto"], width=100)
+                            
+                            label = f"{prod['nazev']} (VO: {cena_vo} Kč | MO: {cena_mo:.0f} Kč)"
+                            key_input = f"vo_{idx}"
+                            default_val = st.session_state.get(key_input, 0)
+                            ks = target_col.number_input(label, min_value=0, max_value=500, value=default_val, key=key_input)
+                            
+                            if ks > 0:
+                                vybrane_polozky.append(f"{ks}x {prod['nazev']}")
+                                celkova_cena_zbozi_vo += ks * cena_vo
+                                mo_hodnota_celkem += ks * cena_mo
+                                celkem_ks += ks
 
             with col_kosik:
                 st.subheader("2. Údaje & Způsob dopravy")
@@ -578,18 +625,21 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             if uloz_objednavky(df_aktualni, current_sha):
                                 odeslat_email_upozorneni(nove_id, firma, celkova_konecna_cena, zvolena_doprava_nazev, celkem_ks, polozky_text_email)
                                 
-                                st.balloons()
-                                st.success("🎉 Děkujeme! Velkoobchodní objednávka byla úspěšně přijata.")
-                                
                                 html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text_email.replace("\n", "<br>"), celkem_ks, celkova_cena_zbozi_vo, zvolena_doprava_nazev, cena_dopravy, celkova_konecna_cena, aktualni_sleva)
-                                st.download_button("📥 Stáhnout B2B Potvrzení (HTML/PDF)", html_uct, file_name=f"DeniCandle_B2B_{nove_id}.html", mime="text/html")
                                 
                                 spd_str = f"SPD*1.0*ACC:{BANK_ACCOUNT}/{BANK_CODE}*AM:{celkova_konecna_cena:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
                                 qr_img = qrcode.make(spd_str)
                                 buf = BytesIO()
                                 qr_img.save(buf, format="PNG")
                                 
-                                st.image(buf.getvalue(), caption="QR Platba převodem", width=200)
+                                st.session_state["potvrzeni_b2b"] = {
+                                    "id": nove_id,
+                                    "html_uct": html_uct,
+                                    "qr_bytes": buf.getvalue(),
+                                    "cena": celkova_konecna_cena
+                                }
+                                st.session_state["need_clear_b2b_form"] = True
+                                st.rerun()
                             else:
                                 st.error("❌ Chyba při ukládání objednávky.")
                                 
