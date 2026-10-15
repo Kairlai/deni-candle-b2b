@@ -17,7 +17,7 @@ from openpyxl.utils.dataframe import dataframe_to_rows
 
 FILE_PATH = "objednavky_deni_b2b.csv"
 SETTINGS_PATH = "nastaveni_deni.json"
-LOGO_PATH = "logo.jpg"
+LOGO_PATH = "logo.png"
 
 # --- BANKOVNÍ ÚDAJE DENI CANDLE ---
 BANK_ACCOUNT = "4078292013"
@@ -34,6 +34,10 @@ EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD", "")
 EMAIL_RECEIVER = st.secrets.get("EMAIL_RECEIVER", "")
 SMTP_SERVER = st.secrets.get("SMTP_SERVER", "smtp.centrum.cz")
 SMTP_PORT = st.secrets.get("SMTP_PORT", 465)
+
+# Nastavení ikony stránky na nahrané logo (pokud soubor existuje)
+page_fav = LOGO_PATH if os.path.exists(LOGO_PATH) else "🕯️"
+st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon=page_fav)
 
 # Kompletní katalog produktů
 PRODUKTY_KATALOG = [
@@ -90,14 +94,13 @@ PRODUKTY_KATALOG = [
     {"nazev": "✨ Jen tak…", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
     {"nazev": "🌙 Vypni svět, zapal svíčku", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
 
-    # Láskyplné
+    # Láska & Zvířátka
     {"nazev": "💖 Srdíčko z lásky – velké", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
     {"nazev": "❤️ Srdíčko z lásky", "cena_mo": 249.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
     {"nazev": "🧸 Medvídek z lásky", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
-    {"nazev": "🫂 Láskyplné objetí", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"}
+    {"nazev": "🫂 Láskyplné objetí", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
+    {"nazev": "🐰 Velikonoční ušák – fialový", "cena_mo": 299.0, "foto": "", "kategorie": "💖 Láska & Zvířátka"}
 ]
-
-st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
 
 st.markdown("""
     <style>
@@ -197,7 +200,7 @@ st.markdown("""
     .web-header-banner {
         background: linear-gradient(180deg, #100E0E 0%, #1A1616 100%);
         border-radius: 14px;
-        padding: 24px;
+        padding: 24px 20px 20px 20px;
         text-align: center;
         color: #FFFFFF !important;
         margin-bottom: 25px;
@@ -212,16 +215,34 @@ st.markdown("""
         opacity: 0.85;
         margin-bottom: 12px;
     }
+    .header-logo-img {
+        width: 85px;
+        height: 85px;
+        border-radius: 50%;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
     </style>
 """, unsafe_allow_html=True)
 
-st.markdown("""
+# Vložení loga přímo do hlavičky (s fallbackem na ikonu, pokud soubor ještě není nahrán)
+logo_html_tag = ""
+if os.path.exists(LOGO_PATH):
+    try:
+        with open(LOGO_PATH, "rb") as img_f:
+            b64_logo = base64.b64encode(img_f.read()).decode("utf-8")
+            logo_html_tag = f'<img src="data:image/png;base64,{b64_logo}" class="header-logo-img"><br>'
+    except Exception:
+        logo_html_tag = ""
+
+st.markdown(f"""
     <div class="web-header-banner">
         <div class="web-header-contacts">
             ✉️ kouba20@centrum.cz &nbsp;|&nbsp; 📞 +420 725 677 701 &nbsp;|&nbsp; 🇨🇿 Česká ruční výroba
         </div>
-        <h1 style="margin: 0; font-size: 32px; letter-spacing: 2px;">🕯️ DENI CANDLE</h1>
-        <p style="margin: 5px 0 0 0; font-size: 15px; opacity: 0.9;">Sojové svíčky s čistým svědomím & B2B velkoobchodní portál</p>
+        {logo_html_tag}
+        <h1 style="margin: 0; font-size: 30px; letter-spacing: 2px;">DENI CANDLE</h1>
+        <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">Sojové svíčky s čistým svědomím & B2B velkoobchodní portál</p>
     </div>
 """, unsafe_allow_html=True)
 
@@ -506,7 +527,7 @@ sklad_vyrobeno = nastaveni_app.get("vyrobeno_sklad", {})
 if os.path.exists(LOGO_PATH):
     st.sidebar.image(LOGO_PATH, width=140)
 
-st.sidebar.markdown("## 🕯️ Deni Candle B2B")
+st.sidebar.markdown("## Deni Candle B2B")
 rezim = st.sidebar.radio("Navigace:", ["🛍️ Velkoobchodní objednávka", "🔐 Správa pro majitele"])
 
 # ---------------------------------------------------------
@@ -621,7 +642,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 
                 min_datum_dodani = date.today() + timedelta(days=4)
                 datum_dodani = st.date_input(
-                    "📅 Požadovaný termín dodání * (datum dodání je pouze informativní):",
+                    "📅 Požadovaný termín dodání * (výroba zabere min. 4 dny):",
                     value=min_datum_dodani,
                     min_value=min_datum_dodani,
                     format="DD.MM.YYYY"
