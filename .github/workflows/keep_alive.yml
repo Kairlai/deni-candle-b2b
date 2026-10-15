@@ -1,11 +1,13 @@
 name: Keep Streamlit Alive
 
 on:
-  schedule:
-    # Spouští se každých 6 hodin
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+  name: Keep Streamlit Alive
 
+on:
+  schedule:
+    # Běží každých 30 minut
+    - cron: '*/30 * * * *'
+  workflow_dispatch: # Ponechá možnost ručního spuštění tlačítkem
 jobs:
   ping:
     runs-on: ubuntu-latest
