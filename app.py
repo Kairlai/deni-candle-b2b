@@ -622,7 +622,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 
                 min_datum_dodani = date.today() + timedelta(days=4)
                 datum_dodani = st.date_input(
-                    "📅 Požadovaný termín dodání * (výroba zabere min. 4 dny):",
+                    "📅 Požadovaný termín dodání * (datum dodání je pouze informativní):",
                     value=min_datum_dodani,
                     min_value=min_datum_dodani,
                     format="DD.MM.YYYY"
