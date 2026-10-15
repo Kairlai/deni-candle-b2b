@@ -107,7 +107,6 @@ st.markdown("""
     header {background-color: transparent !important;}
     footer {visibility: hidden;}
     
-    /* Celkové pozadí - jemná pudrová růžová z webu */
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
         background-color: #EBA299 !important;
     }
@@ -122,7 +121,6 @@ st.markdown("""
         font-weight: 700;
     }
 
-    /* Čisté bílé karty pro katalog a košík */
     div[data-testid="stColumn"] {
         background: #FFFFFF !important;
         padding: 24px;
@@ -131,7 +129,6 @@ st.markdown("""
         box-shadow: 0 8px 24px rgba(60, 20, 25, 0.08);
     }
     
-    /* Vstupní pole */
     div[data-testid="stNumberInput"] div[data-baseweb="input"],
     div[data-baseweb="input"], input, textarea {
         background-color: #FFF9F8 !important;
@@ -151,7 +148,6 @@ st.markdown("""
         background-color: #EFC5C0 !important;
     }
 
-    /* Tlačítka - signifikantní pastelově žlutá z webu */
     div.stButton > button,
     div.stDownloadButton > button,
     div.stFormSubmitButton > button,
@@ -181,7 +177,6 @@ st.markdown("""
         box-shadow: 0 6px 18px rgba(0,0,0,0.1);
     }
 
-    /* Karty souhrnu a info boxy */
     .summary-card {
         background-color: #FFF2F0 !important;
         padding: 18px;
@@ -190,7 +185,6 @@ st.markdown("""
         margin-bottom: 20px;
     }
 
-    /* Záložky (Tabs) */
     button[data-baseweb="tab"] {
         background-color: transparent !important;
         font-weight: 600 !important;
@@ -201,7 +195,6 @@ st.markdown("""
         border-bottom-color: #1F1012 !important;
     }
 
-    /* Záhlaví ve stylu webu */
     .web-header-banner {
         background: linear-gradient(180deg, #100E0E 0%, #1A1616 100%);
         border-radius: 14px;
@@ -223,7 +216,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Vizuální záhlaví ladící s webem
 st.markdown("""
     <div class="web-header-banner">
         <div class="web-header-contacts">
@@ -351,7 +343,7 @@ def uloz_nastaveni(nastaveni_dict, sha=None):
 
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{SETTINGS_PATH}"
     content_b64 = base64.b64encode(obsah.encode("utf-8")).decode("utf-8")
-    payload = {"message": "Aktualizace nastaveni / skladu Deni Candle", "content": content_b64}
+    payload = {"message": "Aktualizace nastaveni / partneru Deni Candle", "content": content_b64}
     if sha:
         payload["sha"] = sha
     res = requests.put(url, headers=get_headers(), json=payload)
@@ -885,7 +877,6 @@ else:
                     new_cols = ["CELKEM POTŘEBA", "Už vyrobeno", "Zbývá odlejt"] + order_cols
                     df_pivot = df_pivot[new_cols].sort_values(by="Zbývá odlejt", ascending=False).reset_index()
                     
-                    # POUŽITÍ SELECTBOXU (ROZBALOVACÍ NABÍDKY) PRO "UŽ VYROBENO"
                     edited_df = st.data_editor(
                         df_pivot,
                         hide_index=True,
@@ -896,7 +887,7 @@ else:
                             "Už vyrobeno": st.column_config.SelectboxColumn(
                                 "Už vyrobeno (ks) ✍️", 
                                 help="Dvakrát klikněte a vyberte počet",
-                                options=list(range(201)),  # Nabídka rozbalovátka 0 až 200
+                                options=list(range(201)),
                                 required=True
                             )
                         },
@@ -984,7 +975,7 @@ else:
                 st.success("🎉 Skvělé! Všechny svíčky jsou odlité a žádné objednávky nečekají na výrobu.")
                 
         with tab_partneri:
-            st.markdown("### ➕ Založit nového velkoodběratele (Kompletní profil)")
+            st.markdown("### ➕ Založit nového velkoodběratele")
             with st.form("form_novy_partner", clear_on_submit=True):
                 col_p1, col_p2, col_p3 = st.columns([1.5, 2.5, 1])
                 n_pin = col_p1.text_input("Přístupový PIN (heslo partnera) *").strip()
@@ -1021,38 +1012,72 @@ else:
                                 "Sleva": int(n_sleva)
                             }
                             partneri_seznam.append(novy_p)
-                            if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
+                            nastaveni_app["partneri"] = partneri_seznam
+                            if uloz_nastaveni(nastaveni_app, sha_nastaveni):
                                 st.success(f"✅ Partner **{n_nazev}** byl úspěšně kompletně založen!")
                                 st.rerun()
                             else:
                                 st.error("❌ Chyba při ukládání.")
 
             st.divider()
-            st.markdown("### 👥 Seznam aktivních velkoodběratelů")
+            st.markdown("### 👥 Seznam aktivních velkoodběratelů & Editace")
+            st.caption("Rozbalte partnera pro okamžitou úpravu jeho údajů nebo PINu.")
             
             partneri_ke_smazani = []
             for i, p in enumerate(partneri_seznam):
-                p_pin = p["PIN"]
+                p_pin = str(p["PIN"])
                 p_nazev = p.get("Nazev", "Partner")
                 p_sleva = p.get("Sleva", 40)
-                p_firma = p.get("Firma_ICO", "-")
-                p_kontakt = p.get("Jmeno", "-")
-                p_tel = p.get("Telefon", "-")
-                p_mail = p.get("Email", "-")
-                p_adr = p.get("Adresa", "-")
+                p_firma = p.get("Firma_ICO", "")
+                p_kontakt = p.get("Jmeno", "")
+                p_tel = p.get("Telefon", "")
+                p_mail = p.get("Email", "")
+                p_adr = p.get("Adresa", "")
                 
                 with st.expander(f"🏪 {p_nazev} — Sleva {p_sleva} % (PIN: {p_pin})"):
-                    c_info1, c_info2 = st.columns(2)
-                    with c_info1:
-                        st.markdown(f"**🔑 PIN:** `{p_pin}`")
-                        st.markdown(f"**🏢 Firma / IČO:** {p_firma}")
-                        st.markdown(f"**👤 Kontakt:** {p_kontakt}")
-                    with c_info2:
-                        st.markdown(f"**📞 Telefon:** {p_tel}")
-                        st.markdown(f"**✉️ E-mail:** {p_mail}")
-                        st.markdown(f"**📍 Adresa:** {p_adr}")
+                    st.caption(f"🔗 **Přímý odkaz pro partnera:** `?pin={p_pin}`")
+                    
+                    with st.form(f"form_edit_partner_{i}"):
+                        c_e1, c_e2, c_e3 = st.columns([1.5, 2.5, 1])
+                        edit_pin = c_e1.text_input("B2B PIN *", value=p_pin).strip()
+                        edit_nazev = c_e2.text_input("Název partnera *", value=p_nazev).strip()
+                        edit_sleva = c_e3.number_input("Sleva v %", min_value=0, max_value=99, value=int(p_sleva))
                         
-                    st.caption(f"🔗 **Přímý odkaz pro partnera k odeslání:** `?pin={p_pin}`")
+                        c_ef1, c_ef2 = st.columns(2)
+                        edit_firma = c_ef1.text_input("Firma / Obchod & IČO", value=p_firma).strip()
+                        edit_kontakt = c_ef2.text_input("Kontaktní osoba", value=p_kontakt).strip()
+                        
+                        c_ec1, c_ec2 = st.columns(2)
+                        edit_tel = c_ec1.text_input("Telefon", value=p_tel).strip()
+                        edit_mail = c_ec2.text_input("E-mail", value=p_mail).strip()
+                        
+                        edit_adr = st.text_area("Výchozí doručovací adresa", value=p_adr, height=70).strip()
+                        
+                        btn_save = st.form_submit_button("💾 Uložit změny partnera")
+                        if btn_save:
+                            if not edit_pin or not edit_nazev:
+                                st.warning("⚠️ PIN i název partnera musí být vyplněny.")
+                            else:
+                                ostatni_piny = [str(part["PIN"]) for idx_part, part in enumerate(partneri_seznam) if idx_part != i]
+                                if edit_pin in ostatni_piny:
+                                    st.error("❌ Tento PIN už používá jiný partner. Zvolte unikátní PIN.")
+                                else:
+                                    partneri_seznam[i] = {
+                                        "PIN": edit_pin,
+                                        "Nazev": edit_nazev,
+                                        "Firma_ICO": edit_firma if edit_firma else edit_nazev,
+                                        "Jmeno": edit_kontakt,
+                                        "Telefon": edit_tel,
+                                        "Email": edit_mail,
+                                        "Adresa": edit_adr,
+                                        "Sleva": int(edit_sleva)
+                                    }
+                                    nastaveni_app["partneri"] = partneri_seznam
+                                    if uloz_nastaveni(nastaveni_app, sha_nastaveni):
+                                        st.success(f"✅ Údaje partnera **{edit_nazev}** byly úspěšně uloženy!")
+                                        st.rerun()
+                                    else:
+                                        st.error("❌ Chyba při ukládání změn.")
                     
                     if st.button("🗑️ Smazat tohoto partnera", key=f"del_partner_{i}"):
                         partneri_ke_smazani.append(i)
@@ -1060,6 +1085,7 @@ else:
             if partneri_ke_smazani:
                 for idx in sorted(partneri_ke_smazani, reverse=True):
                     partneri_seznam.pop(idx)
-                if uloz_nastaveni({"partneri": partneri_seznam}, sha_nastaveni):
+                nastaveni_app["partneri"] = partneri_seznam
+                if uloz_nastaveni(nastaveni_app, sha_nastaveni):
                     st.success("✅ Partner byl smazán.")
                     st.rerun()
