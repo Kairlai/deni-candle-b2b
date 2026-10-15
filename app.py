@@ -153,53 +153,12 @@ st.markdown("""
         background-color: #D8C6B6 !important;
     }
 
-    /* Ošetření všech běžných inputů a textových polí */
     input, textarea {
         background-color: #FFFFFF !important;
         color: #1A1A1A !important;
         -webkit-text-fill-color: #1A1A1A !important;
         border: 1px solid #C8B8A8 !important;
         border-radius: 6px !important;
-    }
-
-    /* --- AGRESIVNÍ OPRAVA PRO DATEINPUT --- */
-    div[data-testid="stDateInput"] > div,
-    div[data-testid="stDateInput"] div[data-baseweb="input"],
-    div[data-testid="stDateInput"] div[data-baseweb="base-input"],
-    div[data-testid="stDateInput"] input,
-    div[data-testid="stDateInput"] input[type="text"] {
-        background-color: #FFFFFF !important;
-        color: #1A1A1A !important;
-        -webkit-text-fill-color: #1A1A1A !important;
-        border: 1px solid #C8B8A8 !important;
-        border-radius: 8px !important;
-        opacity: 1 !important;
-    }
-    
-    div[data-testid="stDateInput"] svg {
-        fill: #5C3A2E !important;
-        color: #5C3A2E !important;
-    }
-
-    /* --- VYSKAKOVACÍ OKNO KALENDÁŘE --- */
-    div[data-baseweb="popover"],
-    div[data-baseweb="popover"] div,
-    div[data-baseweb="calendar"],
-    div[data-baseweb="calendar"] *,
-    div[role="listbox"] * {
-        background-color: #FAF4EE !important;
-        color: #1A1A1A !important;
-    }
-    
-    div[data-baseweb="calendar"] button[aria-selected="true"],
-    div[data-baseweb="calendar"] button[aria-selected="true"] * {
-        background-color: #8C5A47 !important;
-        color: #FFFFFF !important;
-        -webkit-text-fill-color: #FFFFFF !important;
-    }
-    
-    div[data-baseweb="calendar"] button:hover {
-        background-color: #EADCD0 !important;
     }
 
     code {
@@ -267,13 +226,17 @@ st.markdown("""
         border-left: 5px solid #8C5A47;
         margin-bottom: 20px;
     }
+    
+    /* Vlastní styling pro tabulku st.data_editor s barevnými indikátory */
+    div[data-testid="stDataFrame"] {
+        background-color: #FAF4EE !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
 def get_headers():
     return {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
 
-# --- ODESÍLÁNÍ POTVRZENÍ PARTNEROVI I MAJITELI ---
 def odeslat_email_upozorneni(id_obj, firma, jmeno, email_partnera, telefon, adresa, cena, doprava_nazev, celkem_ks, polozky_text, datum_dodani):
     if not EMAIL_SENDER or not EMAIL_PASSWORD:
         return False
@@ -353,14 +316,18 @@ def nacti_nastaveni():
                 "Adresa": "Nádražní 15, 301 00 Plzeň",
                 "Sleva": 40
             }
-        ]
+        ],
+        "vyrobeno_sklad": {}  # Sem budeme ukládat, kolik kusů je od každé svíčky vyrobeno
     }
     if not GITHUB_TOKEN or not GITHUB_REPO:
         if not os.path.exists(SETTINGS_PATH):
             with open(SETTINGS_PATH, "w") as f:
                 json.dump(vychozi_data, f)
         with open(SETTINGS_PATH, "r") as f:
-            return json.load(f), None
+            data = json.load(f)
+            if "vyrobeno_sklad" not in data:
+                data["vyrobeno_sklad"] = {}
+            return data, None
 
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{SETTINGS_PATH}"
     res = requests.get(url, headers=get_headers())
@@ -368,7 +335,10 @@ def nacti_nastaveni():
         data = res.json()
         sha = data["sha"]
         content_str = base64.b64decode(data["content"]).decode("utf-8")
-        return json.loads(content_str), sha
+        nastaveni_json = json.loads(content_str)
+        if "vyrobeno_sklad" not in nastaveni_json:
+            nastaveni_json["vyrobeno_sklad"] = {}
+        return nastaveni_json, sha
     else:
         return vychozi_data, None
 
@@ -381,7 +351,7 @@ def uloz_nastaveni(nastaveni_dict, sha=None):
 
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{SETTINGS_PATH}"
     content_b64 = base64.b64encode(obsah.encode("utf-8")).decode("utf-8")
-    payload = {"message": "Aktualizace odběratelů Deni Candle", "content": content_b64}
+    payload = {"message": "Aktualizace nastaveni / skladu Deni Candle", "content": content_b64}
     if sha:
         payload["sha"] = sha
     res = requests.put(url, headers=get_headers(), json=payload)
@@ -541,6 +511,8 @@ nastaveni_app, sha_nastaveni = nacti_nastaveni()
 partneri_seznam = nastaveni_app.get("partneri", [{"PIN": VÝCHOZÍ_B2B_PIN, "Nazev": "Základní velkoodběratel", "Sleva": 40}])
 partneri_dict = {str(p["PIN"]): p for p in partneri_seznam}
 
+sklad_vyrobeno = nastaveni_app.get("vyrobeno_sklad", {})
+
 if os.path.exists(LOGO_PATH):
     st.sidebar.image(LOGO_PATH, width=140)
 
@@ -659,7 +631,6 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 email = col_e.text_input("E-mail * (pro potvrzení objednávky)", value=vychozi_email).strip()
                 adresa = st.text_area("Doručovací adresa (Ulice, ČP, Město, PSČ) *", value=vychozi_adresa, height=80).strip()
                 
-                # ZAMRZNUTÍ PRVNÍCH 4 DNŮ V KALENDÁŘI
                 min_datum_dodani = date.today() + timedelta(days=4)
                 datum_dodani = st.date_input(
                     "📅 Požadovaný termín dodání * (výroba zabere min. 4 dny):",
@@ -669,7 +640,6 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 )
                 datum_dodani_str = datum_dodani.strftime("%d.%m.%Y")
                 
-                # DOPRAVA DLE MNOŽSTVÍ POLOŽEK
                 st.markdown("**🚚 Způsob a cena dopravy:**")
                 st.info("📦 **Doprava bude vybrána dle množství položek a cena bude také stanovena dle celkového objemu/hmotnosti zásilky.** (Bude dohodnuto při expedici).")
                 zvolena_doprava_nazev = "Dle množství položek"
@@ -888,7 +858,8 @@ else:
             df_k_vyrobe = df_orders[df_orders.get('Stav_Vyroby', 'K výrobě') == 'K výrobě'] if not df_orders.empty else pd.DataFrame()
             
             if not df_k_vyrobe.empty:
-                st.markdown("### 📊 Výrobní matice (Pouze nezpracované zakázky)")
+                st.markdown("### 📊 Interaktivní výrobní matice (Přehled chybějících kusů)")
+                st.info("💡 **Nápověda:** V tabulce níže dvakrát klikněte do sloupce **'Už vyrobeno'** a zadejte aktuální počet odlitých svíček. Systém sám spočítá, kolik jich ještě chybí pro pokrytí všech otevřených objednávek.")
                 
                 matrix_rows = []
                 for idx, row in df_k_vyrobe.iterrows():
@@ -907,23 +878,63 @@ else:
                     df_matrix_raw = pd.DataFrame(matrix_rows)
                     df_pivot = df_matrix_raw.pivot_table(index="Produkt", columns="Col", values="Ks", aggfunc="sum", fill_value=0)
                     
-                    df_pivot["CELKEM KS"] = df_pivot.sum(axis=1)
-                    df_pivot = df_pivot.sort_values(by="CELKEM KS", ascending=False).reset_index()
+                    df_pivot["CELKEM POTŘEBA"] = df_pivot.sum(axis=1)
                     
-                    df_pivot_display = df_pivot.copy()
-                    for col in df_pivot_display.columns:
-                        if col not in ["Produkt", "CELKEM KS"]:
-                            df_pivot_display[col] = df_pivot_display[col].apply(lambda x: f"{x} ks" if x > 0 else "-")
-                        elif col == "CELKEM KS":
-                            df_pivot_display[col] = df_pivot_display[col].apply(lambda x: f"🔥 {x} ks")
+                    # Přidání sledování už vyrobených kusů (načteno z JSON)
+                    df_pivot["Už vyrobeno"] = df_pivot.index.map(lambda x: sklad_vyrobeno.get(x, 0))
+                    
+                    df_pivot["Zbývá odlejt"] = df_pivot["CELKEM POTŘEBA"] - df_pivot["Už vyrobeno"]
+                    
+                    # Abychom zabránili záporným číslům (když vyrobí víc než je potřeba)
+                    df_pivot["Zbývá odlejt"] = df_pivot["Zbývá odlejt"].apply(lambda x: x if x > 0 else 0)
+                    
+                    # Příprava zobrazení (přesuneme důležité sloupce dopředu)
+                    cols = df_pivot.columns.tolist()
+                    order_cols = [c for c in cols if c.startswith("Obj #")]
+                    new_cols = ["CELKEM POTŘEBA", "Už vyrobeno", "Zbývá odlejt"] + order_cols
+                    df_pivot = df_pivot[new_cols].sort_values(by="Zbývá odlejt", ascending=False).reset_index()
+                    
+                    # Interaktivní zobrazení pomocí data_editor
+                    edited_df = st.data_editor(
+                        df_pivot,
+                        hide_index=True,
+                        column_config={
+                            "Produkt": st.column_config.TextColumn("Produkt", disabled=True),
+                            "CELKEM POTŘEBA": st.column_config.NumberColumn("CELKEM POTŘEBA", disabled=True),
+                            "Zbývá odlejt": st.column_config.NumberColumn("Zbývá odlejt (ks) 🔥", disabled=True),
+                            "Už vyrobeno": st.column_config.NumberColumn(
+                                "Už vyrobeno (ks) ✍️", 
+                                help="Klikněte sem pro úpravu", 
+                                min_value=0,
+                                step=1
+                            )
+                        },
+                        # Zablokujeme všechny ostatní sloupce (objednávky)
+                        disabled=["Produkt", "CELKEM POTŘEBA", "Zbývá odlejt"] + order_cols,
+                        key="editor_sklad",
+                        use_container_width=True
+                    )
+                    
+                    # Tlačítko pro uložení změn v množství
+                    if st.button("💾 Uložit aktuální stav výroby", type="primary"):
+                        for idx, row in edited_df.iterrows():
+                            produkt_nazev = row["Produkt"]
+                            vyrobeno_ks = int(row["Už vyrobeno"])
+                            sklad_vyrobeno[produkt_nazev] = vyrobeno_ks
+                        
+                        nastaveni_app["vyrobeno_sklad"] = sklad_vyrobeno
+                        if uloz_nastaveni(nastaveni_app, sha_nastaveni):
+                            st.success("✅ Stav výroby byl úspěšně uložen.")
+                            st.rerun()
 
-                    st.table(df_pivot_display)
+                    st.divider()
                     
-                    excel_data = vytvor_profi_excel(df_pivot, titulek="Vyrobni_Matice")
+                    # Pro export do excelu odstraníme případné emoji a styl
+                    excel_data = vytvor_profi_excel(edited_df, titulek="Vyrobni_Matice")
                     st.download_button(
-                        label="📥 Stáhnout výrobní matici do Excelu", 
+                        label="📥 Stáhnout tuto matici do Excelu", 
                         data=excel_data, 
-                        file_name=f"DeniCandle_VyrobniMatice_{datetime.now().strftime('%d_%m')}.xlsx", 
+                        file_name=f"DeniCandle_Vyroba_{datetime.now().strftime('%d_%m')}.xlsx", 
                         mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                         key="dl_all_vyroba_matrix"
                     )
@@ -965,8 +976,22 @@ else:
                             )
                             
                             if c_m2.button(f"✅ Hotovo / Odlito (Vyřídit #{id_obj})", key=f"done_vyroba_{id_obj}"):
+                                # Při označení celé objednávky jako vyřízené můžeme odečíst vyrobené kusy z globálního skladu
+                                detail_odecet = row["Polozky_Detail"]
+                                if pd.notna(detail_odecet):
+                                    for item in str(detail_odecet).split(", "):
+                                        if "x " in item:
+                                            ks, n_str = item.split("x ", 1)
+                                            if n_str in sklad_vyrobeno:
+                                                novy_stav = sklad_vyrobeno[n_str] - int(ks)
+                                                sklad_vyrobeno[n_str] = novy_stav if novy_stav > 0 else 0
+                                    
+                                    nastaveni_app["vyrobeno_sklad"] = sklad_vyrobeno
+                                    uloz_nastaveni(nastaveni_app, sha_nastaveni)
+
                                 df_orders.loc[df_orders['ID'] == id_obj, 'Stav_Vyroby'] = 'Vyřízeno'
                                 uloz_objednavky(df_orders, current_sha)
+                                st.success(f"Objednávka #{id_obj} vyřízena a sklad aktualizován.")
                                 st.rerun()
             else:
                 st.success("🎉 Skvělé! Všechny svíčky jsou odlité a žádné objednávky nečekají na výrobu.")
