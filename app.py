@@ -1,5 +1,5 @@
 import base64
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import io
 from io import BytesIO
 import os
@@ -34,13 +34,6 @@ EMAIL_PASSWORD = st.secrets.get("EMAIL_PASSWORD", "")
 EMAIL_RECEIVER = st.secrets.get("EMAIL_RECEIVER", "")
 SMTP_SERVER = st.secrets.get("SMTP_SERVER", "smtp.centrum.cz")
 SMTP_PORT = st.secrets.get("SMTP_PORT", 465)
-
-DOPRAVA_MOZNOSTI = {
-    "📦 Zásilkovna": 120,
-    "🚚 Kurýr DPD": 150,
-    "🏬 Osobní odběr v dílně": 0
-}
-DOPRAVA_ZDARMA_OD = 5000
 
 # Kompletní katalog 50 produktů rozdělených do kolekcí
 PRODUKTY_KATALOG = [
@@ -239,14 +232,13 @@ def get_headers():
     return {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
 
 # --- ODESÍLÁNÍ POTVRZENÍ PARTNEROVI I MAJITELI ---
-def odeslat_email_upozorneni(id_obj, firma, jmeno, email_partnera, telefon, adresa, cena, doprava_nazev, celkem_ks, polozky_text):
+def odeslat_email_upozorneni(id_obj, firma, jmeno, email_partnera, telefon, adresa, cena, doprava_nazev, celkem_ks, polozky_text, datum_dodani):
     if not EMAIL_SENDER or not EMAIL_PASSWORD:
         return False
     try:
         msg = MIMEMultipart()
         msg['From'] = f"Deni Candle <{EMAIL_SENDER}>"
         
-        # Odesílá se přímo odběrateli, kopie jde majiteli
         if email_partnera:
             msg['To'] = email_partnera
             if EMAIL_RECEIVER and EMAIL_RECEIVER.strip().lower() != email_partnera.strip().lower():
@@ -265,21 +257,22 @@ děkujeme za Vaši velkoobchodní objednávku v portálu Deni Candle.
 Firma / IČO: {firma}
 Kontaktní osoba: {jmeno} ({telefon})
 Doručovací adresa: {adresa}
-Způsob dopravy: {doprava_nazev}
+Požadovaný termín dodání: {datum_dodani}
+Způsob dopravy: {doprava_nazev} (bude vyčíslena dle celkového objemu balíku)
 Celkem produktů: {celkem_ks} ks
 
 PŘEHLED POLOŽEK:
 {polozky_text}
 
 ----------------------------------------
-CELKOVÁ ČÁSTKA K ÚHRADĚ: {cena:,.0f} Kč
+CELKOVÁ CENA ZBOŽÍ: {cena:,.0f} Kč (+ doprava dle množství)
 ----------------------------------------
 
 💳 POKYNY K PLATBĚ PŘEVODEM:
 Číslo účtu: {BANK_ACCOUNT}/{BANK_CODE}
 IBAN: {BANK_IBAN}
 Variabilní symbol: {id_obj}
-Částka: {cena:,.0f} Kč
+Částka za zboží: {cena:,.0f} Kč
 Zpráva pro příjemce: DeniCandle B2B {id_obj}
 
 Jakmile platbu přijmeme, pustíme se do odlévání a přípravy Vašeho balíku.
@@ -354,7 +347,7 @@ def uloz_nastaveni(nastaveni_dict, sha=None):
 
 def nacti_objednavky():
     sloupce = [
-        "ID", "Datum_Vytvoreni", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
+        "ID", "Datum_Vytvoreni", "Pozadovane_Datum_Dodani", "Oznaceni_Partnera", "Firma_ICO", "Jmeno_Kontakt", 
         "Telefon", "Email", "Adresa_Doruceni", "Poznamka", "Polozky_Detail", 
         "Celkem_Ks", "Sleva_Pouzita", "Cena_Zbozi_VO", "Doprava_Nazev", "Cena_Dopravy", 
         "Cena_Celkem_VO", "Stav_Platby", "Stav_Vyroby"
@@ -366,9 +359,16 @@ def nacti_objednavky():
             df_empty.to_csv(FILE_PATH, index=False)
             return df_empty, None
         df = pd.read_csv(FILE_PATH)
-        for col in ["Stav_Vyroby", "Doprava_Nazev", "Cena_Zbozi_VO"]:
+        for col in ["Stav_Vyroby", "Doprava_Nazev", "Cena_Zbozi_VO", "Pozadovane_Datum_Dodani"]:
             if col not in df.columns:
-                df[col] = "K výrobě" if col == "Stav_Vyroby" else ("Osobní odběr" if col == "Doprava_Nazev" else df.get("Cena_Celkem_VO", 0))
+                if col == "Pozadovane_Datum_Dodani":
+                    df[col] = "-"
+                elif col == "Stav_Vyroby":
+                    df[col] = "K výrobě"
+                elif col == "Doprava_Nazev":
+                    df[col] = "Dle množství položek"
+                else:
+                    df[col] = df.get("Cena_Celkem_VO", 0)
         return df, None
 
     url = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{FILE_PATH}"
@@ -378,9 +378,16 @@ def nacti_objednavky():
         sha = data["sha"]
         content_str = base64.b64decode(data["content"]).decode("utf-8")
         df = pd.read_csv(io.StringIO(content_str))
-        for col in ["Stav_Vyroby", "Doprava_Nazev", "Cena_Zbozi_VO"]:
+        for col in ["Stav_Vyroby", "Doprava_Nazev", "Cena_Zbozi_VO", "Pozadovane_Datum_Dodani"]:
             if col not in df.columns:
-                df[col] = "K výrobě" if col == "Stav_Vyroby" else ("Osobní odběr" if col == "Doprava_Nazev" else df.get("Cena_Celkem_VO", 0))
+                if col == "Pozadovane_Datum_Dodani":
+                    df[col] = "-"
+                elif col == "Stav_Vyroby":
+                    df[col] = "K výrobě"
+                elif col == "Doprava_Nazev":
+                    df[col] = "Dle množství položek"
+                else:
+                    df[col] = df.get("Cena_Celkem_VO", 0)
         return df, sha
     else:
         df_empty = pd.DataFrame(columns=sloupce)
@@ -443,7 +450,7 @@ def vytvor_profi_excel(df, titulek="Objednávky"):
     wb.save(output)
     return output.getvalue()
 
-def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, celkem_ks, cena_zbozi, doprava_nazev, cena_dopravy, cena_celkem, sleva):
+def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, celkem_ks, cena_zbozi, doprava_nazev, cena_celkem, sleva, datum_dodani):
     return f"""
     <!DOCTYPE html>
     <html lang="cs">
@@ -466,18 +473,18 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
                 <p>Velkoobchodní objednávka #{id_obj} (Sleva {sleva} %)</p>
             </div>
             <h3>Odběratel:</h3>
-            <p><strong>Firma / IČO:</strong> {firma}<br><strong>Kontakt:</strong> {jmeno} ({telefon})<br><strong>Adresa doručení:</strong> {adresa}</p>
+            <p><strong>Firma / IČO:</strong> {firma}<br><strong>Kontakt:</strong> {jmeno} ({telefon})<br><strong>Adresa doručení:</strong> {adresa}<br><strong>Požadovaný termín dodání:</strong> {datum_dodani}</p>
             <h3>Objednané zboží ({celkem_ks} ks):</h3>
             <p>{polozky_str}</p>
-            <p><strong>Doprava:</strong> {doprava_nazev} ({cena_dopravy:,.0f} Kč)</p>
-            <div class="total">Celková cena k úhradě: {cena_celkem:,.0f} Kč</div>
+            <p><strong>Doprava:</strong> {doprava_nazev} (bude vyčíslena dle celkového objemu)</p>
+            <div class="total">Cena zboží k úhradě: {cena_celkem:,.0f} Kč</div>
             
             <div class="payment">
                 <strong>💳 Pokyny k platbě převodem:</strong><br><br>
                 Číslo účtu: <strong>{BANK_ACCOUNT}/{BANK_CODE}</strong><br>
                 IBAN: <strong>{BANK_IBAN}</strong><br>
                 Variabilní symbol: <strong>{id_obj}</strong><br>
-                Částka: <strong>{cena_celkem:,.0f} Kč</strong>
+                Částka za zboží: <strong>{cena_celkem:,.0f} Kč</strong>
             </div>
             
             <p style="margin-top:20px; font-size:12px; color:#666; text-align:center;">Děkujeme za váš odběr rukodělných svíček Deni Candle.</p>
@@ -595,7 +602,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                                 celkem_ks += ks
 
             with col_kosik:
-                st.subheader("2. Údaje & Způsob dopravy")
+                st.subheader("2. Údaje & Dodání")
                 
                 vychozi_firma = aktivni_partner.get("Firma_ICO") or aktivni_partner.get("Nazev", "")
                 vychozi_jmeno = aktivni_partner.get("Jmeno", "")
@@ -610,33 +617,38 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 email = col_e.text_input("E-mail * (pro potvrzení objednávky)", value=vychozi_email).strip()
                 adresa = st.text_area("Doručovací adresa (Ulice, ČP, Město, PSČ) *", value=vychozi_adresa, height=80).strip()
                 
-                st.markdown("**🚚 Výběr dopravy:**")
-                zvolena_doprava_nazev = st.radio("Způsob doručení:", list(DOPRAVA_MOZNOSTI.keys()))
-                zakladni_cena_dopravy = DOPRAVA_MOZNOSTI[zvolena_doprava_nazev]
+                # ZAMRZNUTÍ PRVNÍCH 4 DNŮ V KALENDÁŘI
+                min_datum_dodani = date.today() + timedelta(days=4)
+                datum_dodani = st.date_input(
+                    "📅 Požadovaný termín dodání * (výroba zabere min. 4 dny):",
+                    value=min_datum_dodani,
+                    min_value=min_datum_dodani,
+                    format="DD.MM.YYYY"
+                )
+                datum_dodani_str = datum_dodani.strftime("%d.%m.%Y")
                 
-                if celkova_cena_zbozi_vo >= DOPRAVA_ZDARMA_OD and zakladni_cena_dopravy > 0:
-                    cena_dopravy = 0
-                    st.success("🎉 Skvělé! Dosáhli jste na **Dopravu ZDARMA**.")
-                else:
-                    cena_dopravy = zakladni_cena_dopravy
-                    if zakladni_cena_dopravy > 0 and celkova_cena_zbozi_vo > 0:
-                        st.caption(f"💡 Doprava ZDARMA od {DOPRAVA_ZDARMA_OD:,.0f} Kč (chybí {DOPRAVA_ZDARMA_OD - celkova_cena_zbozi_vo:,.0f} Kč).")
+                # DOPRAVA DLE MNOŽSTVÍ POLOŽEK
+                st.markdown("**🚚 Způsob a cena dopravy:**")
+                st.info("📦 **Doprava bude vybrána dle množství položek a cena bude také stanovena dle celkového objemu/hmotnosti zásilky.** (Bude dohodnuto při expedici).")
+                zvolena_doprava_nazev = "Dle množství položek"
+                cena_dopravy = 0
 
                 poznamka = st.text_input("Poznámka k doručení / balení:").strip()
                 
                 st.divider()
                 
-                celkova_konecna_cena = celkova_cena_zbozi_vo + cena_dopravy
+                celkova_konecna_cena = celkova_cena_zbozi_vo
                 uspora = mo_hodnota_celkem - celkova_cena_zbozi_vo
                 
                 st.markdown(f"""
                     <div class='summary-card'>
                         <h4 style='margin: 0;'>Shrnutí VO objednávky</h4>
                         <p style='margin: 5px 0 0 0; font-size: 14px;'>Celkem produktů: <strong>{celkem_ks} ks</strong></p>
-                        <p style='margin: 0; font-size: 13px;'>Cena zboží: {celkova_cena_zbozi_vo:,.0f} Kč</p>
-                        <p style='margin: 0; font-size: 13px;'>Doprava: {cena_dopravy:,.0f} Kč</p>
+                        <p style='margin: 0; font-size: 13px;'>Požadované dodání: <strong>{datum_dodani_str}</strong></p>
+                        <p style='margin: 0; font-size: 13px;'>Doprava: <em>Dle množství položek (bude dohodnuta)</em></p>
                         <p style='margin: 0; font-size: 13px; color: #8C5A47;'>Úspora oproti MO: {uspora:,.0f} Kč</p>
-                        <h3 style='margin: 10px 0 0 0;'>Celkem k úhradě: {celkova_konecna_cena:,.0f} Kč</h3>
+                        <h3 style='margin: 10px 0 0 0;'>Cena zboží k úhradě: {celkova_konecna_cena:,.0f} Kč</h3>
+                        <small style='color: #666;'>+ cena dopravy dle množství položek</small>
                     </div>
                 """, unsafe_allow_html=True)
                 
@@ -654,6 +666,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             nova_obj = pd.DataFrame([{
                                 "ID": nove_id,
                                 "Datum_Vytvoreni": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                                "Pozadovane_Datum_Dodani": datum_dodani_str,
                                 "Oznaceni_Partnera": nazev_partnera,
                                 "Firma_ICO": firma,
                                 "Jmeno_Kontakt": jmeno,
@@ -674,7 +687,6 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                             
                             df_aktualni = pd.concat([df_orders, nova_obj], ignore_index=True)
                             if uloz_objednavky(df_aktualni, current_sha):
-                                # ODESLÁNÍ E-MAILU ODBĚRATELI + KOPIE MAJITELI
                                 odeslat_email_upozorneni(
                                     id_obj=nove_id, 
                                     firma=firma, 
@@ -685,10 +697,16 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                                     cena=celkova_konecna_cena, 
                                     doprava_nazev=zvolena_doprava_nazev, 
                                     celkem_ks=celkem_ks, 
-                                    polozky_text=polozky_text_email
+                                    polozky_text=polozky_text_email,
+                                    datum_dodani=datum_dodani_str
                                 )
                                 
-                                html_uct = vygeneruj_b2b_uctenku(nove_id, firma, jmeno, adresa, telefon, polozky_text_email.replace("\n", "<br>"), celkem_ks, celkova_cena_zbozi_vo, zvolena_doprava_nazev, cena_dopravy, celkova_konecna_cena, aktualni_sleva)
+                                html_uct = vygeneruj_b2b_uctenku(
+                                    nove_id, firma, jmeno, adresa, telefon, 
+                                    polozky_text_email.replace("\n", "<br>"), 
+                                    celkem_ks, celkova_cena_zbozi_vo, zvolena_doprava_nazev, 
+                                    celkova_konecna_cena, aktualni_sleva, datum_dodani_str
+                                )
                                 
                                 spd_str = f"SPD*1.0*ACC:{BANK_IBAN}*AM:{celkova_konecna_cena:.2f}*CC:CZK*X-VS:{nove_id}*MSG:DeniCandle B2B {nove_id}"
                                 qr_img = qrcode.make(spd_str)
@@ -714,11 +732,12 @@ if rezim == "🛍️ Velkoobchodní objednávka":
                 for idx, row in moje_objednavky.iterrows():
                     id_o = row['ID']
                     dat_o = row['Datum_Vytvoreni']
+                    dat_dod = row.get('Pozadovane_Datum_Dodani', '-')
                     cena_o = row['Cena_Celkem_VO']
                     ks_o = row['Celkem_Ks']
                     detail_o = str(row['Polozky_Detail'])
                     
-                    with st.expander(f"📦 Objednávka #{id_o} — {cena_o:,.0f} Kč ({dat_o})"):
+                    with st.expander(f"📦 Objednávka #{id_o} — {cena_o:,.0f} Kč (Vytvořeno: {dat_o} | Dodání: {dat_dod})"):
                         st.write(f"**Položky ({ks_o} ks):** {detail_o}")
                         st.write(f"**Doprava:** {row.get('Doprava_Nazev', '-')} | **Stav:** {row.get('Stav_Vyroby', 'K výrobě')}")
                         
@@ -770,13 +789,14 @@ else:
                 for idx, row in df_orders_sorted.iterrows():
                     id_obj = row['ID']
                     datum = row['Datum_Vytvoreni']
+                    dodani = row.get('Pozadovane_Datum_Dodani', '-')
                     partner = row['Oznaceni_Partnera']
                     cena = row['Cena_Celkem_VO']
                     stav_v = row.get('Stav_Vyroby', 'K výrobě')
                     
                     ikona_stavu = "🔥" if stav_v == "K výrobě" else "✅"
                     
-                    with st.expander(f"{ikona_stavu} Objednávka #{id_obj} — {partner} | {cena:,.0f} Kč | {datum} ({stav_v})"):
+                    with st.expander(f"{ikona_stavu} Objednávka #{id_obj} — {partner} | {cena:,.0f} Kč | Dodání do: {dodani} ({stav_v})"):
                         c1, c2 = st.columns(2)
                         
                         with c1:
@@ -787,9 +807,10 @@ else:
                             st.markdown(f"**📍 Adresa:** {row['Adresa_Doruceni']}")
                             
                         with c2:
+                            st.markdown(f"**📅 Požadované datum dodání:** `{dodani}`")
                             st.markdown(f"**🏷️ Použitá sleva:** {row['Sleva_Pouzita']}")
-                            st.markdown(f"**🚚 Doprava:** {row.get('Doprava_Nazev', '-')} ({row.get('Cena_Dopravy', 0)} Kč)")
-                            st.markdown(f"**💰 Celková cena (VO):** {cena:,.0f} Kč")
+                            st.markdown(f"**🚚 Doprava:** {row.get('Doprava_Nazev', 'Dle množství položek')}")
+                            st.markdown(f"**💰 Cena zboží (VO):** {cena:,.0f} Kč")
                             st.markdown(f"**📦 Celkem kusů:** {row['Celkem_Ks']} ks")
                             st.markdown(f"**📌 Stav zakázky:** `{stav_v}`")
                             
@@ -876,8 +897,9 @@ else:
                     id_obj = row['ID']
                     partner = row['Oznaceni_Partnera']
                     datum = row['Datum_Vytvoreni']
+                    dodani = row.get('Pozadovane_Datum_Dodani', '-')
                     
-                    with st.expander(f"Rozpiska pro Objednávku #{id_obj} — {partner} ({datum})"):
+                    with st.expander(f"Rozpiska pro Objednávku #{id_obj} — {partner} (Termín: {dodani})"):
                         polozky_obj = []
                         detail = row["Polozky_Detail"]
                         if pd.notna(detail):
