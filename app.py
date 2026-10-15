@@ -90,12 +90,11 @@ PRODUKTY_KATALOG = [
     {"nazev": "✨ Jen tak…", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
     {"nazev": "🌙 Vypni svět, zapal svíčku", "cena_mo": 259.0, "foto": "", "kategorie": "🕯️ Dárkové & Motivační"},
 
-    # Láska & Zvířátka
+    # Láskyplné
     {"nazev": "💖 Srdíčko z lásky – velké", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
     {"nazev": "❤️ Srdíčko z lásky", "cena_mo": 249.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
     {"nazev": "🧸 Medvídek z lásky", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
-    {"nazev": "🫂 Láskyplné objetí", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"},
-    {"nazev": "🐰 Velikonoční ušák – fialový", "cena_mo": 299.0, "foto": "", "kategorie": "💖 Láska & Zvířátka"}
+    {"nazev": "🫂 Láskyplné objetí", "cena_mo": 299.9, "foto": "", "kategorie": "💖 Láska & Zvířátka"}
 ]
 
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon="🕯️")
