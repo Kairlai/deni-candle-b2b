@@ -153,6 +153,47 @@ st.markdown("""
         background-color: #D8C6B6 !important;
     }
 
+    /* Ošetření všech inputů a textových polí */
+    input, textarea {
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+        -webkit-text-fill-color: #1A1A1A !important;
+        border: 1px solid #C8B8A8 !important;
+        border-radius: 6px !important;
+    }
+
+    /* Oprava zobrazení pro DateInput (datum dodání) */
+    div[data-testid="stDateInput"] > div,
+    div[data-testid="stDateInput"] div[data-baseweb="input"],
+    div[data-testid="stDateInput"] div[data-baseweb="base-input"],
+    div[data-testid="stDateInput"] input {
+        background-color: #FFFFFF !important;
+        color: #1A1A1A !important;
+        -webkit-text-fill-color: #1A1A1A !important;
+        border: 1px solid #C8B8A8 !important;
+        border-radius: 8px !important;
+    }
+    div[data-testid="stDateInput"] svg {
+        fill: #5C3A2E !important;
+        color: #5C3A2E !important;
+    }
+
+    /* Vyskakovací okno kalendáře */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] div,
+    div[data-baseweb="calendar"],
+    div[data-baseweb="calendar"] * {
+        background-color: #FAF4EE !important;
+        color: #1A1A1A !important;
+    }
+    div[data-baseweb="calendar"] button:hover {
+        background-color: #EADCD0 !important;
+    }
+    div[data-baseweb="calendar"] button[aria-selected="true"] {
+        background-color: #8C5A47 !important;
+        color: #FFFFFF !important;
+    }
+
     code {
         background-color: #EADCD0 !important;
         color: #1A1A1A !important;
@@ -160,13 +201,6 @@ st.markdown("""
         padding: 2px 6px !important;
         border-radius: 4px !important;
         font-weight: bold !important;
-    }
-
-    input, textarea {
-        background-color: #FFFFFF !important;
-        color: #1A1A1A !important;
-        border: 1px solid #C8B8A8 !important;
-        border-radius: 6px !important;
     }
 
     div.stButton > button,
