@@ -35,7 +35,7 @@ EMAIL_RECEIVER = st.secrets.get("EMAIL_RECEIVER", "")
 SMTP_SERVER = st.secrets.get("SMTP_SERVER", "smtp.centrum.cz")
 SMTP_PORT = st.secrets.get("SMTP_PORT", 465)
 
-# Kompletní katalog 50 produktů rozdělených do kolekcí
+# Kompletní katalog produktů
 PRODUKTY_KATALOG = [
     # Vánoční kolekce
     {"nazev": "🎄 Šťastné a veselé – stromeček", "cena_mo": 409.0, "foto": "", "kategorie": "🎄 Vánoční kolekce"},
@@ -107,131 +107,131 @@ st.markdown("""
     header {background-color: transparent !important;}
     footer {visibility: hidden;}
     
-    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stSidebar"] {
-        background-color: #FAF4EE !important;
-    }
-    html, body, [data-testid="stAppViewContainer"] *, [data-testid="stSidebar"] * {
-        color: #1A1A1A !important;
-    }
-    h1, h2, h3, h4 {
-        color: #5C3A2E !important;
-        font-family: 'Georgia', serif;
-    }
-    div[data-testid="stColumn"] {
-        background: #F4EBE2 !important;
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid #E2D3C4 !important;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    /* Celkové pozadí - jemná pudrová růžová z webu */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stSidebar"] {
+        background-color: #EBA299 !important;
     }
     
+    html, body, [data-testid="stAppViewContainer"] *, [data-testid="stSidebar"] * {
+        color: #261718 !important;
+    }
+    
+    h1, h2, h3, h4 {
+        color: #1F1012 !important;
+        font-family: 'Playfair Display', 'Georgia', serif;
+        font-weight: 700;
+    }
+
+    /* Čisté bílé karty pro katalog a košík */
+    div[data-testid="stColumn"] {
+        background: #FFFFFF !important;
+        padding: 24px;
+        border-radius: 16px;
+        border: none !important;
+        box-shadow: 0 8px 24px rgba(60, 20, 25, 0.08);
+    }
+    
+    /* Vstupní pole */
     div[data-testid="stNumberInput"] div[data-baseweb="input"],
-    div[data-baseweb="input"] {
-        background-color: #FFFFFF !important;
-        border: 1px solid #C8B8A8 !important;
-        border-radius: 8px !important;
+    div[data-baseweb="input"], input, textarea {
+        background-color: #FFF9F8 !important;
+        color: #261718 !important;
+        -webkit-text-fill-color: #261718 !important;
+        border: 1px solid #E5C2BD !important;
+        border-radius: 10px !important;
     }
+    
     div[data-baseweb="input"] button,
-    div[data-baseweb="input"] div {
-        background-color: #EADCD0 !important;
-        border: none !important;
-    }
-    div[data-baseweb="input"] button svg {
-        fill: #1A1A1A !important;
-        color: #1A1A1A !important;
-    }
-    div[data-testid="stNumberInput"] input {
-        background-color: #FFFFFF !important;
-        color: #1A1A1A !important;
-    }
     div[data-testid="stNumberInput"] button {
-        background-color: #EADCD0 !important;
+        background-color: #F8E2DF !important;
         border: none !important;
-        color: #1A1A1A !important;
+        color: #261718 !important;
     }
     div[data-testid="stNumberInput"] button:hover {
-        background-color: #D8C6B6 !important;
+        background-color: #EFC5C0 !important;
     }
 
-    input, textarea {
-        background-color: #FFFFFF !important;
-        color: #1A1A1A !important;
-        -webkit-text-fill-color: #1A1A1A !important;
-        border: 1px solid #C8B8A8 !important;
-        border-radius: 6px !important;
-    }
-
-    code {
-        background-color: #EADCD0 !important;
-        color: #1A1A1A !important;
-        border: 1px solid #C8B8A8 !important;
-        padding: 2px 6px !important;
-        border-radius: 4px !important;
-        font-weight: bold !important;
-    }
-
+    /* Tlačítka - signifikantní pastelově žlutá z webu */
     div.stButton > button,
     div.stDownloadButton > button,
     div.stFormSubmitButton > button,
     [data-testid="stDownloadButton"] > button,
     [data-testid="stFormSubmitButton"] > button {
-        background-color: #8C5A47 !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 8px !important;
-        font-weight: bold !important;
+        background-color: #FEE066 !important;
+        color: #1A1A1A !important;
+        border: 1px solid #EDCE4E !important;
+        border-radius: 30px !important;
+        font-weight: 700 !important;
+        padding: 10px 24px !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+        transition: all 0.2s ease-in-out;
     }
     div.stButton > button *,
     div.stDownloadButton > button *,
     div.stFormSubmitButton > button *,
     [data-testid="stDownloadButton"] > button *,
     [data-testid="stFormSubmitButton"] > button * {
-        color: #FFFFFF !important;
+        color: #1A1A1A !important;
     }
     div.stButton > button:hover,
     div.stDownloadButton > button:hover,
     div.stFormSubmitButton > button:hover {
-        background-color: #6E4434 !important;
+        background-color: #FAD43D !important;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.1);
     }
 
-    div[data-testid="stTable"], 
-    div[data-testid="stTable"] table {
-        background-color: #FAF4EE !important;
-        color: #1A1A1A !important;
-        width: 100% !important;
-    }
-    table {
-        background-color: #FAF4EE !important;
-        color: #1A1A1A !important;
-        border-collapse: collapse !important;
-    }
-    th {
-        background-color: #EADCD0 !important;
-        color: #5C3A2E !important;
-        font-weight: bold !important;
-        border-bottom: 2px solid #C8B8A8 !important;
-        padding: 10px !important;
-    }
-    td {
-        background-color: #FAF4EE !important;
-        color: #1A1A1A !important;
-        border-bottom: 1px solid #E2D3C4 !important;
-        padding: 8px 10px !important;
-    }
-
+    /* Karty souhrnu a info boxy */
     .summary-card {
-        background-color: #EADCD0 !important;
-        padding: 15px;
-        border-radius: 8px;
-        border-left: 5px solid #8C5A47;
+        background-color: #FFF2F0 !important;
+        padding: 18px;
+        border-radius: 12px;
+        border-left: 6px solid #D87B70;
         margin-bottom: 20px;
     }
-    
-    /* Vlastní styling pro tabulku st.data_editor s barevnými indikátory */
-    div[data-testid="stDataFrame"] {
-        background-color: #FAF4EE !important;
+
+    /* Záložky (Tabs) */
+    button[data-baseweb="tab"] {
+        background-color: transparent !important;
+        font-weight: 600 !important;
+        color: #4A2E32 !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: #1F1012 !important;
+        border-bottom-color: #1F1012 !important;
+    }
+
+    /* Záhlaví ve stylu webu */
+    .web-header-banner {
+        background: linear-gradient(180deg, #100E0E 0%, #1A1616 100%);
+        border-radius: 14px;
+        padding: 24px;
+        text-align: center;
+        color: #FFFFFF !important;
+        margin-bottom: 25px;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+    .web-header-banner * {
+        color: #FFFFFF !important;
+    }
+    .web-header-contacts {
+        font-size: 13px;
+        letter-spacing: 1px;
+        opacity: 0.85;
+        margin-bottom: 12px;
     }
     </style>
+""", unsafe_allow_html=True)
+
+# Vizuální záhlaví ladící s webem
+st.markdown("""
+    <div class="web-header-banner">
+        <div class="web-header-contacts">
+            ✉️ kouba20@centrum.cz &nbsp;|&nbsp; 📞 +420 725 677 701 &nbsp;|&nbsp; 🇨🇿 Česká ruční výroba
+        </div>
+        <h1 style="margin: 0; font-size: 32px; letter-spacing: 2px;">🕯️ DENI CANDLE</h1>
+        <p style="margin: 5px 0 0 0; font-size: 15px; opacity: 0.9;">Sojové svíčky s čistým svědomím & B2B velkoobchodní portál</p>
+    </div>
 """, unsafe_allow_html=True)
 
 def get_headers():
@@ -317,7 +317,7 @@ def nacti_nastaveni():
                 "Sleva": 40
             }
         ],
-        "vyrobeno_sklad": {}  # Sem budeme ukládat, kolik kusů je od každé svíčky vyrobeno
+        "vyrobeno_sklad": {}
     }
     if not GITHUB_TOKEN or not GITHUB_REPO:
         if not os.path.exists(SETTINGS_PATH):
@@ -429,7 +429,7 @@ def vytvor_profi_excel(df, titulek="Objednávky"):
     for r in dataframe_to_rows(df, index=False, header=True):
         ws.append(r)
         
-    hlavicka_fill = PatternFill(start_color="8C5A47", end_color="8C5A47", fill_type="solid")
+    hlavicka_fill = PatternFill(start_color="2A1B1D", end_color="2A1B1D", fill_type="solid")
     white_font = Font(color="FFFFFF", bold=True)
     thin_border = Border(
         left=Side(style='thin', color='DDDDDD'),
@@ -470,12 +470,12 @@ def vygeneruj_b2b_uctenku(id_obj, firma, jmeno, adresa, telefon, polozky_str, ce
     <meta charset="UTF-8">
     <title>B2B Objednávka Deni Candle #{id_obj}</title>
     <style>
-        body {{ font-family: Arial, sans-serif; color: #111; max-width: 650px; margin: 0 auto; padding: 30px; background: #FAF4EE; }}
-        .box {{ background: #fff; padding: 30px; border-radius: 10px; border-top: 6px solid #8C5A47; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }}
+        body {{ font-family: Arial, sans-serif; color: #111; max-width: 650px; margin: 0 auto; padding: 30px; background: #EBA299; }}
+        .box {{ background: #fff; padding: 30px; border-radius: 12px; border-top: 8px solid #1A1A1A; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }}
         .header {{ text-align: center; border-bottom: 2px solid #eee; padding-bottom: 15px; }}
-        .header h1 {{ color: #8C5A47; margin: 0; }}
-        .total {{ background: #F4EBE6; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; color: #8C5A47; margin-top: 20px; border-radius: 6px; }}
-        .payment {{ background: #fff8e1; padding: 15px; border-radius: 6px; border-left: 4px solid #ffc107; margin-top: 20px; font-size: 14px; }}
+        .header h1 {{ color: #1A1A1A; margin: 0; }}
+        .total {{ background: #FFF2F0; padding: 15px; text-align: center; font-size: 20px; font-weight: bold; color: #2A1B1D; margin-top: 20px; border-radius: 6px; }}
+        .payment {{ background: #FFFDF0; padding: 15px; border-radius: 6px; border-left: 4px solid #FEE066; margin-top: 20px; font-size: 14px; }}
     </style>
     </head>
     <body>
@@ -510,7 +510,6 @@ nastaveni_app, sha_nastaveni = nacti_nastaveni()
 
 partneri_seznam = nastaveni_app.get("partneri", [{"PIN": VÝCHOZÍ_B2B_PIN, "Nazev": "Základní velkoodběratel", "Sleva": 40}])
 partneri_dict = {str(p["PIN"]): p for p in partneri_seznam}
-
 sklad_vyrobeno = nastaveni_app.get("vyrobeno_sklad", {})
 
 if os.path.exists(LOGO_PATH):
@@ -527,8 +526,6 @@ if rezim == "🛍️ Velkoobchodní objednávka":
         for idx in range(len(PRODUKTY_KATALOG)):
             st.session_state[f"vo_{idx}"] = 0
         st.session_state["need_clear_b2b_form"] = False
-
-    st.markdown("<h1>🕯️ Velkoobchodní portál Deni Candle</h1>", unsafe_allow_html=True)
     
     if "potvrzeni_b2b" in st.session_state:
         p = st.session_state["potvrzeni_b2b"]
@@ -773,7 +770,7 @@ if rezim == "🛍️ Velkoobchodní objednávka":
 # 2. SPRÁVA PRO MAJITELE DENI CANDLE
 # ---------------------------------------------------------
 else:
-    st.markdown("<h1 class='main-header'>🔐 Správa Deni Candle</h1>", unsafe_allow_html=True)
+    st.markdown("<h2>🔐 Správa Deni Candle</h2>", unsafe_allow_html=True)
     heslo_admin = st.text_input("Heslo správce:", type="password")
     
     if heslo_admin == ADMIN_PASSWORD:
@@ -879,22 +876,15 @@ else:
                     df_pivot = df_matrix_raw.pivot_table(index="Produkt", columns="Col", values="Ks", aggfunc="sum", fill_value=0)
                     
                     df_pivot["CELKEM POTŘEBA"] = df_pivot.sum(axis=1)
-                    
-                    # Přidání sledování už vyrobených kusů (načteno z JSON)
                     df_pivot["Už vyrobeno"] = df_pivot.index.map(lambda x: sklad_vyrobeno.get(x, 0))
-                    
                     df_pivot["Zbývá odlejt"] = df_pivot["CELKEM POTŘEBA"] - df_pivot["Už vyrobeno"]
-                    
-                    # Abychom zabránili záporným číslům (když vyrobí víc než je potřeba)
                     df_pivot["Zbývá odlejt"] = df_pivot["Zbývá odlejt"].apply(lambda x: x if x > 0 else 0)
                     
-                    # Příprava zobrazení (přesuneme důležité sloupce dopředu)
                     cols = df_pivot.columns.tolist()
                     order_cols = [c for c in cols if c.startswith("Obj #")]
                     new_cols = ["CELKEM POTŘEBA", "Už vyrobeno", "Zbývá odlejt"] + order_cols
                     df_pivot = df_pivot[new_cols].sort_values(by="Zbývá odlejt", ascending=False).reset_index()
                     
-                    # Interaktivní zobrazení pomocí data_editor
                     edited_df = st.data_editor(
                         df_pivot,
                         hide_index=True,
@@ -909,13 +899,11 @@ else:
                                 step=1
                             )
                         },
-                        # Zablokujeme všechny ostatní sloupce (objednávky)
                         disabled=["Produkt", "CELKEM POTŘEBA", "Zbývá odlejt"] + order_cols,
                         key="editor_sklad",
                         use_container_width=True
                     )
                     
-                    # Tlačítko pro uložení změn v množství
                     if st.button("💾 Uložit aktuální stav výroby", type="primary"):
                         for idx, row in edited_df.iterrows():
                             produkt_nazev = row["Produkt"]
@@ -929,7 +917,6 @@ else:
 
                     st.divider()
                     
-                    # Pro export do excelu odstraníme případné emoji a styl
                     excel_data = vytvor_profi_excel(edited_df, titulek="Vyrobni_Matice")
                     st.download_button(
                         label="📥 Stáhnout tuto matici do Excelu", 
@@ -976,7 +963,6 @@ else:
                             )
                             
                             if c_m2.button(f"✅ Hotovo / Odlito (Vyřídit #{id_obj})", key=f"done_vyroba_{id_obj}"):
-                                # Při označení celé objednávky jako vyřízené můžeme odečíst vyrobené kusy z globálního skladu
                                 detail_odecet = row["Polozky_Detail"]
                                 if pd.notna(detail_odecet):
                                     for item in str(detail_odecet).split(", "):
