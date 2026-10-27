@@ -38,6 +38,17 @@ SMTP_PORT = st.secrets.get("SMTP_PORT", 465)
 # Nastavení ikony stránky na nahrané logo (pokud soubor existuje)
 page_fav = LOGO_PATH if os.path.exists(LOGO_PATH) else "🕯️"
 st.set_page_config(page_title="Deni Candle | B2B Velkoobchod", layout="wide", page_icon=page_fav)
+# Nastavení ikony pro uložení na plochu a instalaci
+if os.path.exists("logo.png"):
+    with open("logo.png", "rb") as f:
+        logo_b64 = base64.b64encode(f.read()).decode()
+    st.markdown(
+        f"""
+        <link rel="apple-touch-icon" href="data:image/png;base64,{logo_b64}">
+        <link rel="icon" type="image/png" href="data:image/png;base64,{logo_b64}">
+        """,
+        unsafe_allow_html=True
+    )
 
 # Kompletní katalog produktů
 PRODUKTY_KATALOG = [
